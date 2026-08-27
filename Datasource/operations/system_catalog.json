@@ -1,0 +1,514 @@
+{
+  "catalog_metadata": {
+    "catalog_id": "NC-OPS-SYS-2026-08",
+    "version": "2.5",
+    "effective_date": "2026-08-01",
+    "last_review": "2026-07-31",
+    "owner": "Operations Architecture",
+    "classification": "Internal / Confidential",
+    "description": "Synthetic system inventory for NexaCore RAG evaluation."
+  },
+  "environment_definitions": {
+    "Production": "Live customer or business workloads",
+    "Staging": "Production-like validation",
+    "Development": "Engineering development and testing",
+    "Recovery": "Secondary-region recovery capability"
+  },
+  "systems": [
+    {
+      "system_id": "SYS-001",
+      "name": "NexaCore Identity Hub",
+      "category": "Identity & Access",
+      "owner_team": "Security Engineering",
+      "business_owner": "Corporate IT",
+      "criticality": "Tier-1",
+      "environment": "Production",
+      "data_classification": "Restricted",
+      "availability_target": "99.95%",
+      "rto_minutes": 30,
+      "rpo_minutes": 5,
+      "primary_region": "IN-South-1",
+      "recovery_region": "IN-Central-1",
+      "authentication": "OIDC/SAML",
+      "dependencies": [
+        "SYS-014",
+        "SYS-021"
+      ],
+      "vendor": "Internal Platform",
+      "last_review": "2026-07-18"
+    },
+    {
+      "system_id": "SYS-002",
+      "name": "Customer Workspace",
+      "category": "Customer Platform",
+      "owner_team": "Workspace Engineering",
+      "business_owner": "Product",
+      "criticality": "Tier-1",
+      "environment": "Production",
+      "data_classification": "Confidential",
+      "availability_target": "99.9%",
+      "rto_minutes": 60,
+      "rpo_minutes": 15,
+      "primary_region": "IN-South-1",
+      "recovery_region": "IN-Central-1",
+      "authentication": "OIDC",
+      "dependencies": [
+        "SYS-001",
+        "SYS-006",
+        "SYS-009"
+      ],
+      "vendor": "Internal Platform",
+      "last_review": "2026-07-22"
+    },
+    {
+      "system_id": "SYS-003",
+      "name": "Revenue CRM",
+      "category": "Sales",
+      "owner_team": "Business Applications",
+      "business_owner": "Sales Operations",
+      "criticality": "Tier-2",
+      "environment": "Production",
+      "data_classification": "Confidential",
+      "availability_target": "99.5%",
+      "rto_minutes": 240,
+      "rpo_minutes": 60,
+      "primary_region": "IN-South-1",
+      "recovery_region": "IN-Central-1",
+      "authentication": "OIDC",
+      "dependencies": [
+        "SYS-001",
+        "SYS-018"
+      ],
+      "vendor": "NexaCore Applications",
+      "last_review": "2026-07-15"
+    },
+    {
+      "system_id": "SYS-004",
+      "name": "ExpenseFlow",
+      "category": "Finance",
+      "owner_team": "Finance Systems",
+      "business_owner": "Finance Operations",
+      "criticality": "Tier-2",
+      "environment": "Production",
+      "data_classification": "Confidential",
+      "availability_target": "99.5%",
+      "rto_minutes": 240,
+      "rpo_minutes": 60,
+      "primary_region": "IN-South-1",
+      "recovery_region": "IN-Central-1",
+      "authentication": "OIDC",
+      "dependencies": [
+        "SYS-001",
+        "SYS-019"
+      ],
+      "vendor": "NexaCore Applications",
+      "last_review": "2026-07-12"
+    },
+    {
+      "system_id": "SYS-005",
+      "name": "VendorHub",
+      "category": "Procurement",
+      "owner_team": "Operations Engineering",
+      "business_owner": "Procurement",
+      "criticality": "Tier-2",
+      "environment": "Production",
+      "data_classification": "Confidential",
+      "availability_target": "99.5%",
+      "rto_minutes": 240,
+      "rpo_minutes": 60,
+      "primary_region": "IN-South-1",
+      "recovery_region": "IN-Central-1",
+      "authentication": "OIDC",
+      "dependencies": [
+        "SYS-001",
+        "SYS-018"
+      ],
+      "vendor": "NexaCore Applications",
+      "last_review": "2026-07-20"
+    },
+    {
+      "system_id": "SYS-006",
+      "name": "ObjectVault",
+      "category": "Storage",
+      "owner_team": "Platform Engineering",
+      "business_owner": "Data Platform",
+      "criticality": "Tier-1",
+      "environment": "Production",
+      "data_classification": "Restricted",
+      "availability_target": "99.95%",
+      "rto_minutes": 60,
+      "rpo_minutes": 15,
+      "primary_region": "IN-South-1",
+      "recovery_region": "IN-Central-1",
+      "authentication": "Workload Identity",
+      "dependencies": [
+        "SYS-014"
+      ],
+      "vendor": "Managed Cloud",
+      "last_review": "2026-07-25"
+    },
+    {
+      "system_id": "SYS-007",
+      "name": "Analytics Lake",
+      "category": "Data & Analytics",
+      "owner_team": "Data Engineering",
+      "business_owner": "Data & AI",
+      "criticality": "Tier-2",
+      "environment": "Production",
+      "data_classification": "Confidential",
+      "availability_target": "99.5%",
+      "rto_minutes": 480,
+      "rpo_minutes": 120,
+      "primary_region": "IN-South-1",
+      "recovery_region": "IN-Central-1",
+      "authentication": "OIDC",
+      "dependencies": [
+        "SYS-006",
+        "SYS-014"
+      ],
+      "vendor": "Managed Cloud",
+      "last_review": "2026-07-19"
+    },
+    {
+      "system_id": "SYS-008",
+      "name": "Support Desk",
+      "category": "Customer Operations",
+      "owner_team": "Business Applications",
+      "business_owner": "Customer Success",
+      "criticality": "Tier-2",
+      "environment": "Production",
+      "data_classification": "Confidential",
+      "availability_target": "99.5%",
+      "rto_minutes": 240,
+      "rpo_minutes": 60,
+      "primary_region": "IN-South-1",
+      "recovery_region": "IN-Central-1",
+      "authentication": "OIDC",
+      "dependencies": [
+        "SYS-001"
+      ],
+      "vendor": "NexaCore Applications",
+      "last_review": "2026-07-10"
+    },
+    {
+      "system_id": "SYS-009",
+      "name": "API Gateway",
+      "category": "Platform",
+      "owner_team": "Platform Engineering",
+      "business_owner": "Engineering",
+      "criticality": "Tier-1",
+      "environment": "Production",
+      "data_classification": "Internal",
+      "availability_target": "99.95%",
+      "rto_minutes": 30,
+      "rpo_minutes": 5,
+      "primary_region": "IN-South-1",
+      "recovery_region": "IN-Central-1",
+      "authentication": "JWT/OIDC",
+      "dependencies": [
+        "SYS-001",
+        "SYS-014"
+      ],
+      "vendor": "Internal Platform",
+      "last_review": "2026-07-26"
+    },
+    {
+      "system_id": "SYS-010",
+      "name": "EventBridge",
+      "category": "Messaging",
+      "owner_team": "Platform Engineering",
+      "business_owner": "Engineering",
+      "criticality": "Tier-1",
+      "environment": "Production",
+      "data_classification": "Internal",
+      "availability_target": "99.95%",
+      "rto_minutes": 30,
+      "rpo_minutes": 5,
+      "primary_region": "IN-South-1",
+      "recovery_region": "IN-Central-1",
+      "authentication": "Workload Identity",
+      "dependencies": [
+        "SYS-014"
+      ],
+      "vendor": "Managed Cloud",
+      "last_review": "2026-07-21"
+    },
+    {
+      "system_id": "SYS-011",
+      "name": "BuildForge CI",
+      "category": "Developer Platform",
+      "owner_team": "Developer Experience",
+      "business_owner": "Engineering",
+      "criticality": "Tier-3",
+      "environment": "Production",
+      "data_classification": "Internal",
+      "availability_target": "99.0%",
+      "rto_minutes": 720,
+      "rpo_minutes": 240,
+      "primary_region": "IN-South-1",
+      "recovery_region": "IN-Central-1",
+      "authentication": "OIDC",
+      "dependencies": [
+        "SYS-001",
+        "SYS-006"
+      ],
+      "vendor": "Internal Platform",
+      "last_review": "2026-07-14"
+    },
+    {
+      "system_id": "SYS-012",
+      "name": "PeopleCore",
+      "category": "HR",
+      "owner_team": "Business Applications",
+      "business_owner": "People Operations",
+      "criticality": "Tier-2",
+      "environment": "Production",
+      "data_classification": "Restricted",
+      "availability_target": "99.5%",
+      "rto_minutes": 240,
+      "rpo_minutes": 60,
+      "primary_region": "IN-South-1",
+      "recovery_region": "IN-Central-1",
+      "authentication": "OIDC",
+      "dependencies": [
+        "SYS-001"
+      ],
+      "vendor": "NexaCore Applications",
+      "last_review": "2026-07-11"
+    },
+    {
+      "system_id": "SYS-013",
+      "name": "Network Edge",
+      "category": "Network",
+      "owner_team": "Infrastructure",
+      "business_owner": "IT",
+      "criticality": "Tier-1",
+      "environment": "Production",
+      "data_classification": "Internal",
+      "availability_target": "99.99%",
+      "rto_minutes": 15,
+      "rpo_minutes": 5,
+      "primary_region": "IN-South-1",
+      "recovery_region": "IN-Central-1",
+      "authentication": "Certificate/Identity",
+      "dependencies": [],
+      "vendor": "Managed Network",
+      "last_review": "2026-07-27"
+    },
+    {
+      "system_id": "SYS-014",
+      "name": "Secrets Vault",
+      "category": "Security",
+      "owner_team": "Security Engineering",
+      "business_owner": "Security",
+      "criticality": "Tier-1",
+      "environment": "Production",
+      "data_classification": "Restricted",
+      "availability_target": "99.99%",
+      "rto_minutes": 15,
+      "rpo_minutes": 5,
+      "primary_region": "IN-South-1",
+      "recovery_region": "IN-Central-1",
+      "authentication": "Workload Identity/MFA",
+      "dependencies": [
+        "SYS-013"
+      ],
+      "vendor": "Managed Security",
+      "last_review": "2026-07-27"
+    },
+    {
+      "system_id": "SYS-015",
+      "name": "Notification Service",
+      "category": "Communications",
+      "owner_team": "Platform Engineering",
+      "business_owner": "Product",
+      "criticality": "Tier-2",
+      "environment": "Production",
+      "data_classification": "Internal",
+      "availability_target": "99.5%",
+      "rto_minutes": 240,
+      "rpo_minutes": 60,
+      "primary_region": "IN-South-1",
+      "recovery_region": "IN-Central-1",
+      "authentication": "Workload Identity",
+      "dependencies": [
+        "SYS-010"
+      ],
+      "vendor": "Internal Platform",
+      "last_review": "2026-07-16"
+    },
+    {
+      "system_id": "SYS-016",
+      "name": "Document Processing",
+      "category": "Content",
+      "owner_team": "AI Platform",
+      "business_owner": "Engineering",
+      "criticality": "Tier-2",
+      "environment": "Production",
+      "data_classification": "Confidential",
+      "availability_target": "99.5%",
+      "rto_minutes": 240,
+      "rpo_minutes": 60,
+      "primary_region": "IN-South-1",
+      "recovery_region": "IN-Central-1",
+      "authentication": "OIDC",
+      "dependencies": [
+        "SYS-006",
+        "SYS-010"
+      ],
+      "vendor": "Internal Platform",
+      "last_review": "2026-07-23"
+    },
+    {
+      "system_id": "SYS-017",
+      "name": "Security Monitor",
+      "category": "Security Operations",
+      "owner_team": "Security Operations",
+      "business_owner": "Security",
+      "criticality": "Tier-1",
+      "environment": "Production",
+      "data_classification": "Restricted",
+      "availability_target": "99.95%",
+      "rto_minutes": 30,
+      "rpo_minutes": 5,
+      "primary_region": "IN-South-1",
+      "recovery_region": "IN-Central-1",
+      "authentication": "MFA",
+      "dependencies": [
+        "SYS-001",
+        "SYS-013",
+        "SYS-014"
+      ],
+      "vendor": "Managed Security",
+      "last_review": "2026-07-24"
+    },
+    {
+      "system_id": "SYS-018",
+      "name": "ProcureLedger",
+      "category": "Finance/Procurement",
+      "owner_team": "Finance Systems",
+      "business_owner": "Procurement",
+      "criticality": "Tier-2",
+      "environment": "Production",
+      "data_classification": "Confidential",
+      "availability_target": "99.5%",
+      "rto_minutes": 240,
+      "rpo_minutes": 60,
+      "primary_region": "IN-South-1",
+      "recovery_region": "IN-Central-1",
+      "authentication": "OIDC",
+      "dependencies": [
+        "SYS-001",
+        "SYS-006"
+      ],
+      "vendor": "NexaCore Applications",
+      "last_review": "2026-07-17"
+    },
+    {
+      "system_id": "SYS-019",
+      "name": "BillingCore",
+      "category": "Finance",
+      "owner_team": "Finance Systems",
+      "business_owner": "Finance",
+      "criticality": "Tier-1",
+      "environment": "Production",
+      "data_classification": "Restricted",
+      "availability_target": "99.9%",
+      "rto_minutes": 60,
+      "rpo_minutes": 15,
+      "primary_region": "IN-South-1",
+      "recovery_region": "IN-Central-1",
+      "authentication": "OIDC/MFA",
+      "dependencies": [
+        "SYS-001",
+        "SYS-006",
+        "SYS-010"
+      ],
+      "vendor": "NexaCore Applications",
+      "last_review": "2026-07-13"
+    },
+    {
+      "system_id": "SYS-020",
+      "name": "Data Catalog",
+      "category": "Data Governance",
+      "owner_team": "Data Engineering",
+      "business_owner": "Data & AI",
+      "criticality": "Tier-3",
+      "environment": "Production",
+      "data_classification": "Internal",
+      "availability_target": "99.0%",
+      "rto_minutes": 720,
+      "rpo_minutes": 240,
+      "primary_region": "IN-South-1",
+      "recovery_region": "IN-Central-1",
+      "authentication": "OIDC",
+      "dependencies": [
+        "SYS-001",
+        "SYS-007"
+      ],
+      "vendor": "Internal Platform",
+      "last_review": "2026-07-09"
+    }
+  ],
+  "summary": {
+    "total_systems": 20,
+    "tier_1": 9,
+    "tier_2": 9,
+    "tier_3": 2,
+    "primary_region": "IN-South-1",
+    "recovery_region": "IN-Central-1"
+  },
+  "relationships": [
+    {
+      "source": "SYS-002",
+      "relationship": "depends_on",
+      "target": "SYS-001"
+    },
+    {
+      "source": "SYS-002",
+      "relationship": "depends_on",
+      "target": "SYS-006"
+    },
+    {
+      "source": "SYS-002",
+      "relationship": "depends_on",
+      "target": "SYS-009"
+    },
+    {
+      "source": "SYS-009",
+      "relationship": "depends_on",
+      "target": "SYS-014"
+    },
+    {
+      "source": "SYS-010",
+      "relationship": "depends_on",
+      "target": "SYS-014"
+    },
+    {
+      "source": "SYS-019",
+      "relationship": "depends_on",
+      "target": "SYS-006"
+    },
+    {
+      "source": "SYS-017",
+      "relationship": "monitors",
+      "target": "SYS-013"
+    },
+    {
+      "source": "SYS-017",
+      "relationship": "monitors",
+      "target": "SYS-014"
+    }
+  ],
+  "review_rules": {
+    "tier_1": "Quarterly",
+    "tier_2": "Semiannual",
+    "tier_3": "Annual",
+    "mandatory_review_triggers": [
+      "major architecture change",
+      "material security incident",
+      "critical supplier change",
+      "recovery exercise failure"
+    ]
+  }
+}

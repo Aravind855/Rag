@@ -1,0 +1,298 @@
+NEXACORE SYSTEMS PRIVATE LIMITED
+SECURITY INCIDENT RESPONSE RUNBOOK
+
+Document ID: NC-SEC-IR-2026-08
+Version: 4.2
+Effective: 01 August 2026
+Owner: Security Operations
+Classification: INTERNAL / CONFIDENTIAL
+
+IMPORTANT DATASET NOTE
+This is synthetic private-company data created for RAG evaluation. It is not a real company's incident record or operational secret.
+
+============================================================
+1. PURPOSE AND SCOPE
+============================================================
+
+This runbook defines how NexaCore identifies, contains, investigates, communicates and closes information-security incidents. It applies to workforce identities, endpoints, cloud infrastructure, applications, customer-facing services, data stores and approved third-party systems.
+
+A security event becomes a security incident when available evidence indicates an actual or reasonably suspected compromise, policy breach, unauthorized access, malicious activity, data exposure or material security control failure.
+
+============================================================
+2. SEVERITY MODEL
+============================================================
+
+SEV-1 CRITICAL
+Examples:
+- Confirmed widespread compromise of production infrastructure.
+- Confirmed exposure of Restricted customer data at material scale.
+- Active credential theft affecting privileged identities.
+Target acknowledgement: 5 minutes.
+Target incident commander assignment: 10 minutes.
+Executive notification target: 30 minutes.
+
+SEV-2 HIGH
+Examples:
+- Confirmed unauthorized access to a sensitive production system.
+- Malware affecting multiple managed endpoints.
+- Significant security-control bypass with credible exploitation.
+Target acknowledgement: 15 minutes.
+Incident lead assignment: 30 minutes.
+
+SEV-3 MEDIUM
+Examples:
+- Confirmed compromise of a single non-critical endpoint.
+- Suspicious activity with limited confirmed impact.
+- Policy violation with potential security consequences.
+Target acknowledgement: 1 hour.
+
+SEV-4 LOW
+Examples:
+- Low-risk policy deviation.
+- Benign alert requiring investigation.
+Target acknowledgement: 1 business day.
+
+Severity may be raised as evidence develops.
+
+============================================================
+3. FIRST 15 MINUTES
+============================================================
+
+The first responder should:
+
+1. Record the alert/event time.
+2. Create or update the security incident ticket.
+3. Preserve available logs and evidence.
+4. Avoid unnecessary changes to the suspected system.
+5. Determine whether credentials should be revoked.
+6. Notify the Security Operations lead for SEV-1/SEV-2.
+7. Identify affected users, systems, accounts and data.
+8. Record actions and timestamps.
+
+Do not delete suspicious files or logs merely because they appear malicious. Preserve evidence according to the investigation procedure.
+
+============================================================
+4. TRIAGE QUESTIONS
+============================================================
+
+The incident lead should establish:
+
+- What happened?
+- When did it start?
+- What evidence confirms the event?
+- Which identities are involved?
+- Which systems are affected?
+- What information could have been accessed?
+- Is the activity still occurring?
+- Is there evidence of lateral movement?
+- Is a third party involved?
+- What controls can safely reduce exposure?
+
+Initial impact categories:
+
+A. Identity compromise
+B. Endpoint compromise
+C. Application compromise
+D. Cloud/infrastructure compromise
+E. Data exposure
+F. Third-party security incident
+G. Policy/control violation
+
+============================================================
+5. CONTAINMENT
+============================================================
+
+Containment actions may include:
+
+- Revoke or suspend compromised credentials.
+- Disable suspicious sessions.
+- Isolate affected endpoint(s).
+- Restrict network paths.
+- Block malicious indicators.
+- Pause affected integrations.
+- Increase logging for impacted systems.
+- Restrict administrative access.
+
+Containment should minimize evidence destruction and avoid unnecessary customer impact.
+
+For privileged credential compromise, Security Operations should prioritize token/session revocation and credential rotation.
+
+============================================================
+6. INVESTIGATION AND EVIDENCE
+============================================================
+
+Potential evidence includes:
+
+- Identity-provider authentication events
+- Endpoint detection telemetry
+- Application access logs
+- Cloud audit logs
+- Network telemetry
+- Database audit events
+- Email security records
+- Security-tool alerts
+- Relevant configuration history
+
+Evidence should have a recorded source, collection timestamp and incident reference.
+
+Investigators should distinguish:
+1. Confirmed facts
+2. Strong indicators
+3. Working hypotheses
+4. Unknowns requiring further investigation
+
+Avoid presenting assumptions as confirmed findings.
+
+============================================================
+7. DATA EXPOSURE ASSESSMENT
+============================================================
+
+When data exposure is suspected, determine:
+
+- Data classification.
+- Data owner.
+- Approximate number of records.
+- Time window.
+- Whether data was accessed, copied, modified or merely exposed.
+- Whether encryption or other controls reduced impact.
+- Customer/contractual obligations.
+- Legal or regulatory notification requirements.
+
+The Security lead coordinates with Legal, Privacy and the relevant business owner where required.
+
+============================================================
+8. COMMUNICATION
+============================================================
+
+Internal incident communications should include:
+
+- Incident severity
+- Current impact
+- Confirmed facts
+- Actions completed
+- Actions in progress
+- Customer/business impact
+- Next decision point
+- Named incident owner
+
+Do not speculate about attribution or disclose unverified technical details.
+
+External communications must be approved through the designated Legal/Communications process. Engineers and individual responders must not independently notify customers, regulators or media.
+
+============================================================
+9. INCIDENT COMMAND
+============================================================
+
+For SEV-1 incidents, the standard command structure is:
+
+Incident Commander
+  |
+  +-- Security Lead
+  +-- Technical Lead
+  +-- Communications Lead
+  +-- Business/Customer Lead
+  +-- Scribe
+
+The Incident Commander owns coordination and decision flow. The Technical Lead owns technical containment/recovery decisions. The Scribe maintains the timeline.
+
+============================================================
+10. RECOVERY
+============================================================
+
+Recovery should include:
+
+1. Confirm containment.
+2. Remove persistence or malicious access.
+3. Rotate affected credentials.
+4. Restore systems from trusted state where required.
+5. Validate security controls.
+6. Monitor for recurrence.
+7. Return services gradually when practical.
+
+Production recovery should follow approved deployment and change procedures.
+
+============================================================
+11. POST-INCIDENT REVIEW
+============================================================
+
+A formal review is required for SEV-1 and SEV-2 incidents and for any incident specifically requested by Security leadership.
+
+Review target: within 3 business days of stabilization.
+
+The review must include:
+
+- Executive summary
+- Timeline
+- Customer/business impact
+- Root and contributing factors
+- Detection performance
+- Containment actions
+- Recovery actions
+- Control gaps
+- Corrective actions
+- Owners
+- Target dates
+
+Blame-oriented language should be avoided. The objective is to improve systems and controls.
+
+============================================================
+12. FY26 SECURITY OPERATIONS METRICS
+============================================================
+
+Security incidents requiring formal response: 29
+SEV-1 incidents: 2
+SEV-2 incidents: 9
+SEV-3 incidents: 13
+SEV-4 incidents: 5
+Mean time to acknowledge high-severity alerts: 11 minutes
+Median containment time for SEV-2 incidents: 74 minutes
+Formal post-incident reviews completed within target: 92%
+Incidents involving third parties: 4
+Confirmed credential-compromise cases: 17
+Security incidents with confirmed Restricted-data exposure: 1
+
+These metrics are synthetic and intended for dataset testing.
+
+============================================================
+13. ESCALATION CONTACT ROLES
+============================================================
+
+Primary: Security Operations Lead
+Secondary: Security Engineering Manager
+Technical escalation: Platform On-Call
+Business escalation: Incident Management
+Privacy/legal escalation: Legal & Privacy
+Executive escalation: CISO delegate / Executive Incident Sponsor
+
+Actual contact details are intentionally omitted from this synthetic dataset.
+
+============================================================
+14. INCIDENT TICKET MINIMUM FIELDS
+============================================================
+
+Incident ID
+Severity
+Detection source
+Detection time
+Incident commander
+Affected system
+Affected identity
+Data classification
+Initial impact
+Containment status
+Evidence references
+Communication status
+Recovery status
+Post-incident review status
+Corrective-action owners
+
+============================================================
+15. DOCUMENT CONTROL
+============================================================
+
+NC-SEC-IR-2026-08
+Version 4.2
+Effective 01 August 2026
+Next review 31 July 2027
+Owner: Security Operations
+Classification: Internal / Confidential
