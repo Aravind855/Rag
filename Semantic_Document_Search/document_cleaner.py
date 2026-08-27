@@ -1,8 +1,8 @@
 """
 Document Cleaning & Normalization Module for NexaCore Semantic Document Search.
 
-Cleans raw extracted PDF text while strictly preserving document structure,
-headings, numbered lists (e.g. 1.1 Casual Leave), bullet points, and paragraph boundaries.
+Cleans extracted PDF text while strictly preserving document structure, Markdown tables
+(| ... |), headings (#, ##, ###), subheadings, bullet lists, and paragraph boundaries.
 """
 
 import logging
@@ -41,15 +41,14 @@ class PDFDocumentCleaner:
         self.normalize_spaces = normalize_spaces
 
     def clean_text(self, text: str) -> str:
-        """Clean raw text string while strictly preserving section structure & formatting.
+        """Clean raw text string while strictly preserving Markdown tables, headers, & structure.
 
         Steps:
         1. Strip non-printable control characters.
-        2. Fix hyphenated word breaks at end of lines (e.g., 'sub-\nstantive' -> 'substantive').
+        2. Fix hyphenated word breaks at line ends (e.g., 'sub-\nstantive' -> 'substantive').
         3. Replace Windows carriage returns (\r\n -> \n).
-        4. Normalize repeated blank lines (3+ newlines -> 2 newlines).
-        5. Normalize inline spaces (multiple spaces/tabs to single space) per line while preserving newline breaks.
-        6. Retain all section headings (e.g., '1. Leave Policy', '1.1 Casual Leave'), bullets, punctuation, & case.
+        4. Preserve Markdown tables (| ... |) and Markdown headings (#, ##, ###).
+        5. Normalize inline spaces per non-table line while preserving line breaks & paragraphs.
         """
         if not text:
             return ""
@@ -64,14 +63,18 @@ class PDFDocumentCleaner:
         # 3. Standardize line endings to Unix style (\n)
         cleaned = cleaned.replace("\r\n", "\n").replace("\r", "\n")
 
-        # 4. Process line-by-line to preserve structure and normalize inline whitespace
+        # 4. Process line-by-line to preserve Markdown tables, headers, and bullet formatting
         lines = cleaned.split("\n")
         cleaned_lines = []
         for line in lines:
-            # Collapse multiple spaces or tabs into a single space per line
-            if self.normalize_spaces:
-                line = re.sub(r"[ \t]+", " ", line)
-            cleaned_lines.append(line.strip())
+            stripped = line.strip()
+            # Preserve markdown tables (| ... | or |---|) without aggressive space stripping
+            if stripped.startswith("|") or "|---" in stripped:
+                cleaned_lines.append(stripped)
+            else:
+                if self.normalize_spaces:
+                    line = re.sub(r"[ \t]+", " ", line)
+                cleaned_lines.append(line.strip())
 
         # Rejoin lines
         cleaned = "\n".join(cleaned_lines)
@@ -133,7 +136,7 @@ if __name__ == "__main__":
         print(f"\n--- Cleaned Page Sample ({sample.source_file}, Page {sample.page_number}) ---")
         print(f"Chars before: {sample.char_count_before} | Chars after: {sample.char_count_after}")
         print("\nCleaned Text Snippet:\n")
-        print(sample.text[:400])
+        print(sample.text[:500])
 
     for pdf in loaded_pdfs:
         pdf.close()

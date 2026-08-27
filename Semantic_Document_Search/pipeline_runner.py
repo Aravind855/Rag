@@ -57,6 +57,7 @@ def run_pipeline() -> List[CleanedPage]:
     for pdf in loaded_pdfs:
         pdf.close()
 
+
     # Statistics & Verification Report
     print("\n" + "=" * 80)
     print(" DATA PROCESSING SUMMARY & VERIFICATION REPORT")

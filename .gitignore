@@ -93,6 +93,8 @@ dmypy.json
 # RAG Pipeline Outputs
 parsed_outputs/
 normalized_outputs/
+cleaned_outputs/
+
 
 # Environment variables & secrets
 .env
