@@ -11,10 +11,16 @@ import logging
 import os
 from typing import Any, Dict, Optional
 
-# Load environment variables from .env file if available
+from pathlib import Path
+
+# Load environment variables from root .env file if available
 try:
     from dotenv import load_dotenv
-    load_dotenv()
+    env_path = Path(__file__).resolve().parent / ".env"
+    if env_path.exists():
+        load_dotenv(dotenv_path=env_path, override=True)
+    else:
+        load_dotenv(override=True)
 except ImportError:
     pass
 

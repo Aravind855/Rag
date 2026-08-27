@@ -1,13 +1,18 @@
 """
-Pipeline Runner for NexaCore Semantic Document Search (Project 1 - Steps 1-3).
+Pipeline Ingestion & Indexing Runner for NexaCore Semantic Document Search.
 
-Demonstrates and validates end-to-end PDF Document Loading, Parsing,
-and Structure-Preserving Cleaning.
+Executes data processing pipeline up to vector embedding and FAISS index persistence:
+Step 1: Document Loading
+Step 2: Markdown Parsing
+Step 3: Structure-Preserving Cleaning
+Step 4: Recursive Chunking
+Step 5: Vector Embedding (SentenceTransformers)
+Step 6: FAISS Indexing & Disk Persistence (saves index to 'd:\\RAG\\faiss_index')
 """
 
 import logging
 import sys
-from typing import List
+from pathlib import Path
 
 # Force UTF-8 encoding on standard output for Windows console compatibility
 if sys.stdout.encoding != 'utf-8':
@@ -17,18 +22,21 @@ if sys.stdout.encoding != 'utf-8':
         pass
 
 from document_cleaner import CleanedPage, PDFDocumentCleaner
+from document_chunker import DocumentChunk, RecursiveDocumentChunker
+from document_embedder import DocumentEmbedder, EmbeddedChunk
 from document_loader import PDFDocumentLoader
 from document_parser import PDFDocumentParser
+from faiss_indexer import FAISSVectorIndex
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("PipelineRunner")
 
 
-def run_pipeline() -> List[CleanedPage]:
-    """Execute the Document Loading, Parsing, and Cleaning pipeline."""
+def run_indexing_pipeline(output_dir: str = r"d:\RAG\faiss_index") -> FAISSVectorIndex:
+    """Execute PDF loading, parsing, cleaning, chunking, embedding, and FAISS disk saving."""
     print("=" * 80)
-    print(" NEXACORE SEMANTIC DOCUMENT SEARCH - DATA PIPELINE (STEPS 1-3)")
+    print(" NEXACORE SEMANTIC DOCUMENT SEARCH - DATA INGESTION & FAISS INDEXING PIPELINE")
     print("=" * 80)
 
     # 1. Document Loading
@@ -39,7 +47,7 @@ def run_pipeline() -> List[CleanedPage]:
 
     if not loaded_pdfs:
         logger.error("No PDF files were loaded. Exiting pipeline.")
-        return []
+        raise RuntimeError("No PDF files found.")
 
     # 2. Document Parsing
     logger.info("\nSTEP 2: Starting Page-by-Page Document Parsing...")
@@ -57,12 +65,30 @@ def run_pipeline() -> List[CleanedPage]:
     for pdf in loaded_pdfs:
         pdf.close()
 
+    # 4. Recursive Document Chunking
+    logger.info("\nSTEP 4: Starting Recursive Document Chunking...")
+    chunker = RecursiveDocumentChunker(chunk_size=800, chunk_overlap=150)
+    chunks = chunker.chunk_all_pages(cleaned_pages)
+    print(f"[Summary Step 4] Generated {len(chunks)} text chunks.")
+
+    # 5. Document Embedding
+    logger.info("\nSTEP 5: Generating Vector Embeddings using Sentence Transformers...")
+    embedder = DocumentEmbedder()
+    embedded_chunks = embedder.embed_all_chunks(chunks)
+    print(f"[Summary Step 5] Embedded {len(embedded_chunks)} chunks (Vector dimension: {embedded_chunks[0].embedding.shape[0]}).")
+
+    # 6. FAISS Vector Indexing & Disk Persistence
+    logger.info("\nSTEP 6: Building FAISS Vector Index & Saving to disk...")
+    vector_index = FAISSVectorIndex(dimension=embedded_chunks[0].embedding.shape[0])
+    vector_index.add_embeddings(embedded_chunks)
+    vector_index.save(output_dir)
+    print(f"[Summary Step 6] Successfully saved {vector_index.index.ntotal} indexed vectors to '{output_dir}'.")
 
     # Statistics & Verification Report
     print("\n" + "=" * 80)
-    print(" DATA PROCESSING SUMMARY & VERIFICATION REPORT")
+    print(" INGESTION & FAISS INDEXING SUMMARY REPORT")
     print("=" * 80)
-    
+
     categories = {}
     total_chars_before = 0
     total_chars_after = 0
@@ -72,36 +98,32 @@ def run_pipeline() -> List[CleanedPage]:
         total_chars_before += page.char_count_before
         total_chars_after += page.char_count_after
 
-    print("\nPage Count by Category:")
+    chunk_sizes = [c.char_count for c in chunks]
+    avg_chunk_size = sum(chunk_sizes) / len(chunk_sizes) if chunk_sizes else 0
+
+    print("\nDocument Page Count by Category:")
     for cat, count in categories.items():
         print(f"  - {cat:<15}: {count} pages")
 
     print(f"\nCharacter Statistics:")
-    print(f"  - Total Characters (Raw)    : {total_chars_before:,}")
-    print(f"  - Total Characters (Cleaned): {total_chars_after:,}")
-    print(f"  - Normalization Difference  : {total_chars_before - total_chars_after:,} chars removed/normalized")
+    print(f"  - Total Raw Chars    : {total_chars_before:,}")
+    print(f"  - Total Cleaned Chars: {total_chars_after:,}")
 
-    print("\n" + "-" * 80)
-    print(" SAMPLE OUTPUT INSPECTION (PRESERVING DOCUMENT STRUCTURE)")
-    print("-" * 80)
+    print(f"\nChunking Statistics (Target Chunk Size: 800, Overlap: 150):")
+    print(f"  - Total Chunks Generated: {len(chunks)}")
+    print(f"  - Average Chunk Length  : {avg_chunk_size:.1f} characters")
 
-    # Print a sample page preview from HR and Engineering
-    samples_to_show = ["hr", "engineering"]
-    shown = set()
-    for page in cleaned_pages:
-        if page.category in samples_to_show and page.category not in shown:
-            shown.add(page.category)
-            print(f"\n[Category: {page.category.upper()} | Source: {page.source_file} | Page {page.page_number}/{page.total_pages}]")
-            print("Preview (First 350 chars):\n")
-            print(page.text[:350])
-            print("...")
+    print(f"\nFAISS Index Statistics:")
+    print(f"  - Output Directory   : {output_dir}")
+    print(f"  - Vector Count       : {vector_index.index.ntotal}")
+    print(f"  - Vector Dimensions  : {vector_index.dimension}")
 
     print("\n" + "=" * 80)
-    print(" STEPS 1-3 COMPLETED SUCCESSFULLY!")
+    print(" DOCUMENT EMBEDDING & FAISS INDEXING PIPELINE COMPLETED!")
     print("=" * 80)
 
-    return cleaned_pages
+    return vector_index
 
 
 if __name__ == "__main__":
-    run_pipeline()
+    run_indexing_pipeline()
