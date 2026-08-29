@@ -13,6 +13,7 @@ Step 6: FAISS Indexing & Disk Persistence (saves index to 'd:\\RAG\\faiss_index'
 import logging
 import sys
 from pathlib import Path
+from typing import Optional, Union
 
 # Force UTF-8 encoding on standard output for Windows console compatibility
 if sys.stdout.encoding != 'utf-8':
@@ -33,8 +34,12 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger("PipelineRunner")
 
 
-def run_indexing_pipeline(output_dir: str = r"d:\RAG\faiss_index") -> FAISSVectorIndex:
+DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parent.parent / "faiss_index"
+
+
+def run_indexing_pipeline(output_dir: Optional[Union[str, Path]] = None) -> FAISSVectorIndex:
     """Execute PDF loading, parsing, cleaning, chunking, embedding, and FAISS disk saving."""
+    target_dir = str(Path(output_dir if output_dir is not None else DEFAULT_OUTPUT_DIR).resolve())
     print("=" * 80)
     print(" NEXACORE SEMANTIC DOCUMENT SEARCH - DATA INGESTION & FAISS INDEXING PIPELINE")
     print("=" * 80)
@@ -81,8 +86,8 @@ def run_indexing_pipeline(output_dir: str = r"d:\RAG\faiss_index") -> FAISSVecto
     logger.info("\nSTEP 6: Building FAISS Vector Index & Saving to disk...")
     vector_index = FAISSVectorIndex(dimension=embedded_chunks[0].embedding.shape[0])
     vector_index.add_embeddings(embedded_chunks)
-    vector_index.save(output_dir)
-    print(f"[Summary Step 6] Successfully saved {vector_index.index.ntotal} indexed vectors to '{output_dir}'.")
+    vector_index.save(target_dir)
+    print(f"[Summary Step 6] Successfully saved {vector_index.index.ntotal} indexed vectors to '{target_dir}'.")
 
     # Statistics & Verification Report
     print("\n" + "=" * 80)
@@ -114,7 +119,7 @@ def run_indexing_pipeline(output_dir: str = r"d:\RAG\faiss_index") -> FAISSVecto
     print(f"  - Average Chunk Length  : {avg_chunk_size:.1f} characters")
 
     print(f"\nFAISS Index Statistics:")
-    print(f"  - Output Directory   : {output_dir}")
+    print(f"  - Output Directory   : {target_dir}")
     print(f"  - Vector Count       : {vector_index.index.ntotal}")
     print(f"  - Vector Dimensions  : {vector_index.dimension}")
 

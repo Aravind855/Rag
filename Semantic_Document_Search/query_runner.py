@@ -8,7 +8,7 @@ retrieves document context, prints context snippets, and generates Gemini LLM an
 import logging
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 # Force UTF-8 encoding on standard output for Windows console compatibility
 if sys.stdout.encoding != 'utf-8':
@@ -29,16 +29,20 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger("QueryRunner")
 
 
+DEFAULT_INDEX_DIR = Path(__file__).resolve().parent.parent / "faiss_index"
+
+
 class NexaCoreRAGQueryEngine:
     """Standalone Query Engine that loads FAISS index from disk and answers questions via LLM."""
 
     def __init__(
         self,
-        index_dir: str = r"d:\RAG\faiss_index",
+        index_dir: Optional[Union[str, Path]] = None,
         provider: str = "gemini",
         temperature: float = 0.2,
     ):
-        path = Path(index_dir).resolve()
+        target_dir = index_dir if index_dir is not None else DEFAULT_INDEX_DIR
+        path = Path(target_dir).resolve()
         if not (path / "index.faiss").exists():
             logger.info(f"FAISS index not found at '{path}'. Running ingestion pipeline first...")
             from pipeline_runner import run_indexing_pipeline

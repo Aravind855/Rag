@@ -39,6 +39,9 @@ class SearchResult:
         return asdict(self)
 
 
+DEFAULT_INDEX_DIR = Path(__file__).resolve().parent.parent / "faiss_index"
+
+
 class FAISSVectorIndex:
     """FAISS-backed vector similarity search index with metadata mapping."""
 
@@ -135,9 +138,10 @@ class FAISSVectorIndex:
         query_vec = embedder.embed_query(query_text)
         return self.search(query_vec, top_k=top_k, category_filter=category_filter)
 
-    def save(self, dir_path: Union[str, Path] = r"d:\RAG\faiss_index") -> None:
+    def save(self, dir_path: Optional[Union[str, Path]] = None) -> None:
         """Save FAISS index and metadata store to directory."""
-        path = Path(dir_path).resolve()
+        target_dir = dir_path if dir_path is not None else DEFAULT_INDEX_DIR
+        path = Path(target_dir).resolve()
         path.mkdir(parents=True, exist_ok=True)
 
         faiss_file = str(path / "index.faiss")
@@ -150,9 +154,10 @@ class FAISSVectorIndex:
         logger.info(f"Saved FAISS index and metadata to '{path}'")
 
     @classmethod
-    def load(cls, dir_path: Union[str, Path] = r"d:\RAG\faiss_index") -> "FAISSVectorIndex":
+    def load(cls, dir_path: Optional[Union[str, Path]] = None) -> "FAISSVectorIndex":
         """Load FAISS index and metadata store from directory."""
-        path = Path(dir_path).resolve()
+        target_dir = dir_path if dir_path is not None else DEFAULT_INDEX_DIR
+        path = Path(target_dir).resolve()
         faiss_file = str(path / "index.faiss")
         meta_file = str(path / "metadata.json")
 

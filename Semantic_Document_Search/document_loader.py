@@ -30,11 +30,14 @@ class LoadedPDF:
             self.doc.close()
 
 
+DEFAULT_DATASOURCE_DIR = Path(__file__).resolve().parent.parent / "Datasource"
+
+
 class PDFDocumentLoader:
     """Discovers and loads PDF files from a target directory."""
 
-    def __init__(self, datasource_dir: Union[str, Path] = r"d:\RAG\Datasource"):
-        self.datasource_dir = Path(datasource_dir).resolve()
+    def __init__(self, datasource_dir: Optional[Union[str, Path]] = None):
+        self.datasource_dir = Path(datasource_dir if datasource_dir is not None else DEFAULT_DATASOURCE_DIR).resolve()
 
     def discover_pdf_files(self) -> List[Path]:
         """Scan the datasource directory recursively for .pdf files."""
