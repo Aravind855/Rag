@@ -94,6 +94,8 @@ dmypy.json
 parsed_outputs/
 normalized_outputs/
 cleaned_outputs/
+cleaned_documents/
+Metadata_KB_Rag/cleaned_documents/
 chunks_preview.*
 faiss_index/
 *.faiss
