@@ -105,36 +105,42 @@ class DocumentCleaner:
         return cleaned_docs
 
     def save_cleaned_documents(self, documents: List[Document], output_dir: str = None) -> Path:
-        """Save cleaned document text files to disk categorized by subfolders."""
+        """Save cleaned document text files to disk categorized by subfolders, reassembling split documents."""
         target_dir = Path(output_dir if output_dir is not None else DEFAULT_CLEANED_DIR).resolve()
         target_dir.mkdir(parents=True, exist_ok=True)
 
-        saved_count = 0
+        # Group documents by (category, file_name) to avoid overwriting multi-chunk files
+        grouped_docs: Dict[Tuple[str, str], List[Document]] = {}
         for doc in documents:
-            category = doc.metadata.get("category", "general")
+            category = doc.metadata.get("category", doc.metadata.get("department", "general"))
             file_name = doc.metadata.get("file_name", "document")
-            page_num = doc.metadata.get("page_number", 1)
-            total_pages = doc.metadata.get("total_pages", 1)
+            key = (category, file_name)
+            if key not in grouped_docs:
+                grouped_docs[key] = []
+            grouped_docs[key].append(doc)
 
-            # Create category subfolder
+        saved_count = 0
+        for (category, file_name), docs_list in grouped_docs.items():
             cat_dir = target_dir / category
             cat_dir.mkdir(parents=True, exist_ok=True)
 
-            # Construct clean output filename (.md for structure preservation)
             stem = Path(file_name).stem
             out_filename = f"{stem}.md"
             out_path = cat_dir / out_filename
 
-            # Format file content with metadata header comment
+            # Reassemble complete text content across all chunks/pages of this file
+            combined_text = "\n\n".join(d.text.strip() for d in docs_list if d.text and d.text.strip())
+            total_pages = docs_list[0].metadata.get("total_pages", len(docs_list))
+
             header = (
                 f"<!-- METADATA HEADER -->\n"
-                f"<!-- File: {file_name} | Category: {category} | Pages: {total_pages} -->\n"
-                f"<!-- Chars: {doc.metadata.get('char_count_after', len(doc.text))} -->\n\n"
+                f"<!-- File: {file_name} | Category: {category} | Pages: {total_pages} | Chunks: {len(docs_list)} -->\n"
+                f"<!-- Total Cleaned Chars: {len(combined_text):,} -->\n\n"
             )
-            out_path.write_text(header + doc.text, encoding="utf-8")
+            out_path.write_text(header + combined_text, encoding="utf-8")
             saved_count += 1
 
-        logger.info(f"Saved {saved_count} cleaned document file(s) to '{target_dir}'")
+        logger.info(f"Saved {saved_count} cleaned document file(s) across {len(grouped_docs)} distinct source files to '{target_dir}'")
         return target_dir
 
 

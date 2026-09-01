@@ -1,0 +1,22 @@
+# NexaCore Knowledge Base RAG (Project 2) - Requirements
+
+# LlamaIndex Core Framework
+llama-index-core>=0.10.0
+llama-index-readers-file>=0.1.0
+
+# LlamaIndex Vector Store Integration (Qdrant)
+llama-index-vector-stores-qdrant>=0.2.0
+qdrant-client>=1.9.0
+
+# LlamaIndex Google Gemini LLM & Google Embedding Models
+llama-index-llms-gemini>=0.2.0
+llama-index-embeddings-gemini>=0.2.0
+google-generativeai>=0.5.0
+
+# Multi-Format Document Parsing Dependencies (.pdf, .docx)
+pymupdf>=1.23.0
+pymupdf4llm>=0.0.8
+python-docx>=1.1.0
+
+# Environment Variable & Utility Support
+python-dotenv>=1.0.0

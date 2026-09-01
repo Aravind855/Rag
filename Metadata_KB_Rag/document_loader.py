@@ -92,12 +92,13 @@ class DocumentLoader:
         if not self.datasource_dir.exists():
             raise FileNotFoundError(f"Datasource directory does not exist: {self.datasource_dir}")
 
-        # Map file extensions to specialized LlamaIndex readers
-        file_extractor = {
-            ".pdf": PyMuPDFReader(),
-            ".docx": DocxReader(),
-            ".md": MarkdownReader(),
-        }
+        # Use structure-aware custom readers for .pdf (pymupdf4llm) and .docx (python-docx markdown tables)
+        # Note: .md and .txt use SimpleDirectoryReader's default FlatReader to ingest full content with 0% data loss
+        try:
+            from document_parser import get_custom_file_extractors
+            file_extractor = get_custom_file_extractors()
+        except ImportError:
+            file_extractor = None
 
         # Initialize LlamaIndex SimpleDirectoryReader
         reader = SimpleDirectoryReader(
