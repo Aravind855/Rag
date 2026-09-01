@@ -62,30 +62,35 @@ class DocumentLoader:
 
     def extract_file_metadata(self, file_path_str: str) -> Dict[str, Union[str, int]]:
         """LlamaIndex metadata extractor callback attached to SimpleDirectoryReader."""
-        path = Path(file_path_str)
         try:
-            rel_path = path.relative_to(self.datasource_dir)
-            department = rel_path.parts[0] if len(rel_path.parts) > 1 else "general"
-            source = rel_path.as_posix()
-        except ValueError:
-            department = "general"
-            source = path.name
+            from metadata import build_metadata_extractor
+            extractor = build_metadata_extractor(self.datasource_dir)
+            return extractor(file_path_str)
+        except ImportError:
+            path = Path(file_path_str)
+            try:
+                rel_path = path.relative_to(self.datasource_dir)
+                department = rel_path.parts[0] if len(rel_path.parts) > 1 else "general"
+                source = rel_path.as_posix()
+            except ValueError:
+                department = "general"
+                source = path.name
 
-        stat = path.stat()
-        created_dt = datetime.fromtimestamp(stat.st_ctime, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
-        modified_dt = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+            stat = path.stat()
+            created_dt = datetime.fromtimestamp(stat.st_ctime, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+            modified_dt = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 
-        return {
-            "file_name": path.name,
-            "file_type": path.suffix.lstrip(".").lower(),
-            "category": department,
-            "department": department,
-            "source": source,
-            "file_path": str(path),
-            "size_bytes": stat.st_size,
-            "created_date": created_dt,
-            "modified_date": modified_dt,
-        }
+            return {
+                "file_name": path.name,
+                "file_type": path.suffix.lstrip(".").lower(),
+                "category": department,
+                "department": department,
+                "source": source,
+                "file_path": str(path),
+                "size_bytes": stat.st_size,
+                "created_date": created_dt,
+                "modified_date": modified_dt,
+            }
 
     def load_documents(self) -> List[Document]:
         """Load all target files directly as LlamaIndex Document instances via SimpleDirectoryReader."""
@@ -110,7 +115,16 @@ class DocumentLoader:
         )
 
         documents = reader.load_data()
-        logger.info(f"Loaded {len(documents)} LlamaIndex Document(s) via SimpleDirectoryReader.")
+
+        # Configure LlamaIndex embedding and LLM metadata exclusions
+        try:
+            from metadata import configure_llamaindex_metadata_exclusions
+            for doc in documents:
+                configure_llamaindex_metadata_exclusions(doc)
+        except ImportError:
+            pass
+
+        logger.info(f"Loaded {len(documents)} LlamaIndex Document(s) via SimpleDirectoryReader with configured metadata exclusions.")
         return documents
 
     def discover_files(self) -> List[DiscoveredFile]:

@@ -111,8 +111,17 @@ def run_ingestion_pipeline(datasource_dir: str = None) -> List[Document]:
         for key, val in sample_doc.metadata.items():
             print(f"     * {key:<22}: {val}")
 
+        print("\n6. Metadata Exclusions & Citation Preview:")
+        try:
+            from metadata import format_citation_label
+            print(f"   - Excluded Embed Keys: {getattr(sample_doc, 'excluded_embed_metadata_keys', [])}")
+            print(f"   - Excluded LLM Keys  : {getattr(sample_doc, 'excluded_llm_metadata_keys', [])}")
+            print(f"   - Sample Citation    : {format_citation_label(sample_doc.metadata)}")
+        except ImportError:
+            pass
+
     print("\n" + "=" * 80)
-    print(" PHASE 1: INGESTION PIPELINE COMPLETED SUCCESSFULLY!")
+    print(" STAGE 2: METADATA DESIGN & ENRICHMENT COMPLETED SUCCESSFULLY!")
     print("=" * 80)
 
     return cleaned_documents
