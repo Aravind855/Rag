@@ -35,61 +35,68 @@ logger = logging.getLogger("PipelineRunner")
 
 
 def run_ingestion_pipeline(datasource_dir: str = None) -> List[Document]:
-    """Execute document discovery, multi-format parsing, and structure-preserving cleaning."""
+    """Execute pure LlamaIndex document loading, metadata enrichment, and cleaning pipeline."""
     print("=" * 80)
-    print(" NEXACORE KNOWLEDGE BASE RAG - DATA INGESTION & CLEANING PIPELINE")
+    print(" NEXACORE KNOWLEDGE BASE RAG - PURE LLAMAINDEX INGESTION PIPELINE")
     print("=" * 80)
 
-    # Step 1: Document Discovery & Filtering
-    logger.info("STEP 1: Starting Document Discovery & Extension Filtering...")
+    # Step 1: LlamaIndex SimpleDirectoryReader Document Loading
+    logger.info("STEP 1: Starting Pure LlamaIndex SimpleDirectoryReader Loading...")
     loader = DocumentLoader(datasource_dir=datasource_dir)
-    discovered_files = loader.discover_files()
-    print(f"\n[Summary Step 1] Discovered {len(discovered_files)} supported files (.pdf, .docx, .md, .txt).")
+    raw_documents = loader.load_documents()
+    print(f"\n[Summary Step 1] Loaded {len(raw_documents)} raw LlamaIndex Document object(s) via SimpleDirectoryReader.")
 
-    if not discovered_files:
-        logger.error("No supported files discovered. Exiting ingestion pipeline.")
+    if not raw_documents:
+        logger.error("No supported files loaded via SimpleDirectoryReader. Exiting pipeline.")
         return []
 
-    # Step 2: Multi-Format Document Parsing
-    logger.info("\nSTEP 2: Starting Multi-Format Document Parsing...")
+    # Step 2: LlamaIndex Document Metadata Enrichment
+    logger.info("\nSTEP 2: Starting LlamaIndex Document Metadata Enrichment...")
     parser = DocumentParser()
-    parsed_documents = parser.parse_all_files(discovered_files)
-    print(f"[Summary Step 2] Generated {len(parsed_documents)} LlamaIndex Document objects.")
+    enriched_documents = parser.enrich_all_documents(raw_documents)
+    print(f"[Summary Step 2] Enriched {len(enriched_documents)} LlamaIndex Document object(s) with domain metadata.")
 
     # Step 3: Structure-Preserving Document Cleaning
     logger.info("\nSTEP 3: Starting Structure-Preserving Cleaning & Noise Reduction...")
     cleaner = DocumentCleaner()
-    cleaned_documents = cleaner.clean_all_documents(parsed_documents)
+    cleaned_documents = cleaner.clean_all_documents(enriched_documents)
     saved_dir = cleaner.save_cleaned_documents(cleaned_documents)
     print(f"[Summary Step 3] Cleaned {len(cleaned_documents)} document records and saved files to '{saved_dir}'.")
 
     # Generate Summary Report
     print("\n" + "=" * 80)
-    print(" INGESTION & CLEANING SUMMARY REPORT")
+    print(" INGESTION & CLEANING SUMMARY REPORT (PHASE 1)")
     print("=" * 80)
 
-    categories = {}
+    departments = {}
+    doc_types = {}
     file_types = {}
     total_raw_chars = 0
     total_cleaned_chars = 0
 
     for doc in cleaned_documents:
-        cat = doc.metadata.get("category", "unknown")
+        dept = doc.metadata.get("department", doc.metadata.get("category", "unknown"))
+        dtype = doc.metadata.get("document_type", "unknown")
         ftype = doc.metadata.get("file_type", "unknown")
-        categories[cat] = categories.get(cat, 0) + 1
+        departments[dept] = departments.get(dept, 0) + 1
+        doc_types[dtype] = doc_types.get(dtype, 0) + 1
         file_types[ftype] = file_types.get(ftype, 0) + 1
         total_raw_chars += doc.metadata.get("char_count_before", 0)
         total_cleaned_chars += doc.metadata.get("char_count_after", 0)
 
-    print("\n1. Document Records by Category:")
-    for cat, count in categories.items():
-        print(f"   - {cat:<15}: {count} document pages/sections")
+    print("\n1. Document Records by Department:")
+    for dept, count in departments.items():
+        print(f"   - {dept:<15}: {count} document(s)")
 
-    print("\n2. Document Records by File Extension:")
+    print("\n2. Document Records by Inferred Document Type:")
+    for dtype, count in doc_types.items():
+        print(f"   - {dtype:<20}: {count} document(s)")
+
+    print("\n3. Document Records by File Extension:")
     for ftype, count in file_types.items():
-        print(f"   - {ftype.upper():<15}: {count} documents")
+        print(f"   - {ftype.upper():<15}: {count} document(s)")
 
-    print("\n3. Character Statistics:")
+    print("\n4. Character Statistics:")
     print(f"   - Total Raw Chars    : {total_raw_chars:,}")
     print(f"   - Total Cleaned Chars: {total_cleaned_chars:,}")
 
@@ -97,8 +104,15 @@ def run_ingestion_pipeline(datasource_dir: str = None) -> List[Document]:
     reduction_pct = (reduction / total_raw_chars * 100.0) if total_raw_chars > 0 else 0.0
     print(f"   - Boilerplate Removed: {reduction:,} chars ({reduction_pct:.2f}%)")
 
+    print("\n5. Sample LlamaIndex Document Metadata Schema:")
+    if cleaned_documents:
+        sample_doc = cleaned_documents[0]
+        print(f"   - Document ID: {sample_doc.doc_id}")
+        for key, val in sample_doc.metadata.items():
+            print(f"     * {key:<22}: {val}")
+
     print("\n" + "=" * 80)
-    print(" INGESTION PIPELINE COMPLETED SUCCESSFULLY!")
+    print(" PHASE 1: INGESTION PIPELINE COMPLETED SUCCESSFULLY!")
     print("=" * 80)
 
     return cleaned_documents
