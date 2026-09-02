@@ -96,6 +96,9 @@ normalized_outputs/
 cleaned_outputs/
 cleaned_documents/
 Metadata_KB_Rag/cleaned_documents/
+chunked_nodes/
+Metadata_KB_Rag/chunked_nodes/
+qdrant_data/
 chunks_preview.*
 faiss_index/
 *.faiss
