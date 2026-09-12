@@ -24,7 +24,7 @@ from llama_index.core import Document
 from llama_index.core.ingestion import IngestionPipeline
 from llama_index.core.node_parser import MarkdownNodeParser, SemanticSplitterNodeParser, SentenceSplitter
 from llama_index.core.schema import BaseNode, TextNode
-from llama_index.embeddings.google import GeminiEmbedding
+from embeddings import get_embedding_model
 
 from metadata import configure_llamaindex_metadata_exclusions
 
@@ -133,36 +133,6 @@ class StructureAwareChunker:
         return final_nodes
 
 
-class RateLimitedGeminiEmbedding(GeminiEmbedding):
-    """Wrapper around GeminiEmbedding that adds rate limit retry backoff for 429 errors."""
-
-    def get_text_embedding_batch(
-        self,
-        texts: List[str],
-        show_progress: bool = False,
-        **kwargs: Any,
-    ) -> List[List[float]]:
-        results = []
-        # Process in smaller sub-batches to respect free tier limits
-        batch_size = 20
-        for i in range(0, len(texts), batch_size):
-            batch = texts[i : i + batch_size]
-            for attempt in range(5):
-                try:
-                    batch_embeddings = super()._get_text_embeddings(batch)
-                    results.extend(batch_embeddings)
-                    time.sleep(0.5)  # Pace requests to prevent hitting 100 req/min quota
-                    break
-                except Exception as e:
-                    if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e) or "Quota exceeded" in str(e):
-                        wait_seconds = 15 * (attempt + 1)
-                        logger.warning(f"Rate limit hit (429). Retrying in {wait_seconds}s (Attempt {attempt + 1}/5)...")
-                        time.sleep(wait_seconds)
-                    else:
-                        raise e
-        return results
-
-
 class SemanticChunker:
     """True Semantic Chunker utilizing LlamaIndex SemanticSplitterNodeParser and sentence embeddings."""
 
@@ -173,20 +143,7 @@ class SemanticChunker:
         breakpoint_percentile_threshold: int = 90,
     ):
         if embed_model is None:
-            api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
-            if not api_key:
-                raise ValueError("GEMINI_API_KEY or GOOGLE_API_KEY environment variable is required for SemanticChunker.")
-
-            os.environ["GEMINI_API_KEY"] = api_key
-            os.environ["GOOGLE_API_KEY"] = api_key
-
-            try:
-                import google.generativeai as genai
-                genai.configure(api_key=api_key)
-            except Exception:
-                pass
-
-            embed_model = RateLimitedGeminiEmbedding(model_name="models/gemini-embedding-001", api_key=api_key)
+            embed_model = get_embedding_model()
 
         self.embed_model = embed_model
         self.semantic_splitter = SemanticSplitterNodeParser(
@@ -256,16 +213,10 @@ class HybridChunker:
         self.chunk_overlap = chunk_overlap
 
         if embed_model is None:
-            api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
-            if api_key:
-                os.environ["GEMINI_API_KEY"] = api_key
-                os.environ["GOOGLE_API_KEY"] = api_key
-                try:
-                    import google.generativeai as genai
-                    genai.configure(api_key=api_key)
-                except Exception:
-                    pass
-                embed_model = RateLimitedGeminiEmbedding(model_name="models/gemini-embedding-001", api_key=api_key)
+            try:
+                embed_model = get_embedding_model()
+            except Exception as e:
+                logger.warning(f"Could not load default Cohere embedding model: {e}")
 
         self.embed_model = embed_model
         self.markdown_parser = MarkdownNodeParser()
@@ -281,7 +232,7 @@ class HybridChunker:
 
         logger.info(
             f"Initialized HybridChunker [Structure-Aware + Semantic Sub-Chunking] "
-            f"(embed_model={'Gemini' if embed_model else 'SentenceSplitter'})"
+            f"(embed_model={'Cohere' if embed_model else 'SentenceSplitter'})"
         )
 
     def parse_all_documents(self, documents: List[Document]) -> List[TextNode]:

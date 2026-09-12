@@ -53,7 +53,7 @@ def run_ingestion_pipeline(
     chunking_strategy: str = "structure",
     index_to_qdrant: bool = True,
     collection_name: str = "nexacore_kb",
-) -> Tuple[List[TextNode], Optional[VectorStoreIndex]]:
+   ) -> Tuple[List[TextNode], Optional[VectorStoreIndex]]:
     """Execute end-to-end LlamaIndex document loading, metadata enrichment, cleaning, chunking, and Qdrant indexing pipeline.
 
     Args:
@@ -105,10 +105,10 @@ def run_ingestion_pipeline(
     saved_chunks_dir = save_chunked_nodes(nodes)
     print(f"[Summary Step 4] Generated {len(nodes)} {chunking_strategy} LlamaIndex Node(s) across {len(cleaned_documents)} documents and saved to '{saved_chunks_dir}'.")
 
-    # Step 5: Google GenAI Embeddings & Qdrant Vector Indexing
+    # Step 5: Cohere Embeddings & Qdrant Vector Indexing
     vector_index = None
     if index_to_qdrant:
-        logger.info(f"\nSTEP 5: Starting Google GenAI Embedding & Qdrant Vector DB Indexing...")
+        logger.info(f"\nSTEP 5: Starting Cohere AI Embedding & Qdrant Vector DB Indexing...")
         vdb_manager = NexaCoreVectorStoreManager(collection_name=collection_name)
         vector_index = vdb_manager.index_nodes(nodes)
         print(f"[Summary Step 5] Successfully indexed {len(nodes)} vector embeddings into Qdrant collection '{collection_name}'!")

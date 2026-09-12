@@ -58,10 +58,13 @@ class NexaCoreVectorStoreManager:
         # Initialize Qdrant Client (Cloud vs Local Fallback)
         self.client = self._connect_qdrant_client()
 
-        # Configure Global LlamaIndex Embedding Model (Google GenAI)
+        # Configure Global LlamaIndex Embedding Model (Cohere)
         self.embed_model = configure_global_llamaindex_embeddings()
 
-        # Initialize LlamaIndex QdrantVectorStore with smaller batch size
+        # Ensure Qdrant collection vector dimension matches Cohere embedding size (1024)
+        self._ensure_collection_compatibility(expected_dim=1024)
+
+        # Initialize LlamaIndex QdrantVectorStore with batch size
         self.vector_store = QdrantVectorStore(
             client=self.client,
             collection_name=self.collection_name,
@@ -71,6 +74,34 @@ class NexaCoreVectorStoreManager:
         self.storage_context = StorageContext.from_defaults(vector_store=self.vector_store)
         self.ensure_payload_indexes()
         logger.info(f"Initialized NexaCoreVectorStoreManager targeting collection '{self.collection_name}'.")
+
+    def _ensure_collection_compatibility(self, expected_dim: int = 1024) -> None:
+        """Ensure Qdrant collection exists and has matching vector dimensions (Cohere = 1024)."""
+        from qdrant_client.http import models as qmodels
+        try:
+            if self.client.collection_exists(self.collection_name):
+                info = self.client.get_collection(self.collection_name)
+                vectors_cfg = info.config.params.vectors
+                current_size = getattr(vectors_cfg, "size", None)
+                if current_size is not None and current_size != expected_dim:
+                    logger.warning(
+                        f"Collection '{self.collection_name}' has vector dimension {current_size}, "
+                        f"but current Cohere model requires {expected_dim}. Recreating collection..."
+                    )
+                    self.client.delete_collection(self.collection_name)
+                    self.client.create_collection(
+                        collection_name=self.collection_name,
+                        vectors_config=qmodels.VectorParams(size=expected_dim, distance=qmodels.Distance.COSINE),
+                    )
+                    logger.info(f"Recreated collection '{self.collection_name}' with {expected_dim} dimensions.")
+            else:
+                self.client.create_collection(
+                    collection_name=self.collection_name,
+                    vectors_config=qmodels.VectorParams(size=expected_dim, distance=qmodels.Distance.COSINE),
+                )
+                logger.info(f"Created Qdrant collection '{self.collection_name}' with {expected_dim} dimensions.")
+        except Exception as err:
+            logger.warning(f"Qdrant collection compatibility note: {err}")
 
     def ensure_payload_indexes(self) -> None:
         """Ensure Qdrant payload keyword indexes exist for filtered metadata fields."""

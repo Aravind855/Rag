@@ -172,7 +172,7 @@ def configure_llamaindex_metadata_exclusions(
     node: Any,
     excluded_embed_keys: Optional[List[str]] = None,
     excluded_llm_keys: Optional[List[str]] = None,
-) -> Any:
+ ) -> Any:
     """Configure excluded metadata keys on a LlamaIndex Document or Node instance."""
     embed_keys = excluded_embed_keys if excluded_embed_keys is not None else DEFAULT_EXCLUDED_EMBED_KEYS
     llm_keys = excluded_llm_keys if excluded_llm_keys is not None else DEFAULT_EXCLUDED_LLM_KEYS
