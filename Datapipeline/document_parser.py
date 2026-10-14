@@ -1,578 +1,365 @@
+"""Document Parser Module (Functional Approach).
+
+Provides pure, standalone functions to parse PDF, DOCX, PPTX, XLSX, JSON,
+Markdown, and Plain Text files into structure-aware Markdown representations,
+returning LangChain Document objects.
+"""
+
 import json
 import logging
 import re
-import threading
-from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
-# Optional third-party imports (handled gracefully if missing)
-try:
-    import pymupdf as fitz
-except ImportError:
-    try:
-        import fitz
-    except ImportError:
-        fitz = None
+# LangChain Document representation
+from langchain_core.documents import Document
 
-try:
-    import docx
-except ImportError:
-    docx = None
-
-try:
-    from pptx import Presentation
-except ImportError:
-    Presentation = None
-
-try:
-    import pandas as pd
-except ImportError:
-    pd = None
-
-try:
-    import openpyxl
-except ImportError:
-    openpyxl = None
+# Third-party parsing libraries
+import docx
+from docx.table import Table
+from docx.text.paragraph import Paragraph
+import openpyxl
+import pandas as pd
+from pptx import Presentation
+import pymupdf4llm
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("document_parser")
 
+# verified
+def clean_stem_name(stem: str) -> str:
+    """Cleans file stem by stripping duplicate download markers like (1), _1,
 
-@dataclass
-class DocumentElement:
-    """Represents a structural unit within a document (e.g. page, slide, sheet, section)."""
-    element_type: str  # 'page', 'slide', 'sheet', 'section', 'document'
-    index: int  # 1-indexed number
-    title: Optional[str] = None
-    content: str = ""
-    metadata: Dict[str, Any] = field(default_factory=dict)
-
-
-@dataclass
-class ParsedDocument:
-    """Dynamic, standardized container for parsed document content and rich metadata."""
-    file_path: str
-    file_name: str
-    file_type: str
-    category: str
-    content: str
-    elements: List[DocumentElement] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    error: Optional[str] = None
-
-    @property
-    def total_elements(self) -> int:
-        return len(self.elements)
-
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert ParsedDocument object to dictionary format."""
-        return {
-            "file_path": self.file_path,
-            "file_name": self.file_name,
-            "file_type": self.file_type,
-            "category": self.category,
-            "content": self.content,
-            "elements": [
-                {
-                    "element_type": el.element_type,
-                    "index": el.index,
-                    "title": el.title,
-                    "content": el.content,
-                    "metadata": el.metadata,
-                }
-                for el in self.elements
-            ],
-            "metadata": self.metadata,
-            "error": self.error,
-        }
-
-
-class DocumentParser:
-    """Dynamic, extensible document parser.
-
-    Can handle any arbitrary file extension, unknown directory structures,
-    and supports runtime registration of custom format handlers.
+    and trailing whitespace.
     """
+    cleaned = re.sub(r"\s*\(\d+\)\s*", "", stem)
+    cleaned = re.sub(r"_\d+$", "", cleaned)
+    return cleaned.strip()
 
-    def __init__(self):
-        # Map file extensions to specialized handler methods
-        self._handlers: Dict[str, Callable[[Path, str], ParsedDocument]] = {}
-        self._pdf_lock = threading.Lock()
-        self._register_default_handlers()
+# verified
+def parse_pdf(file_path: Union[str, Path]) -> Dict[str, Any]:
+    """Parses PDF into Markdown using pymupdf4llm, extracting tables as GFM
 
-    def register_handler(self, extensions: Union[str, List[str]], handler_fn: Callable[[Path, str], ParsedDocument]):
-        """Dynamically registers a custom parser function for given file extension(s).
+    Markdown and preserving page markers.
+    """
+    path = Path(file_path).resolve()
+    try:
+        pages_data = pymupdf4llm.to_markdown(str(path), page_chunks=True)
+        full_parts: List[str] = []
+        total_tables = 0
 
-        Args:
-            extensions: Single extension string (e.g. '.xml') or list of extensions (['.html', '.htm']).
-            handler_fn: Callable taking (Path, category_str) and returning ParsedDocument.
-        """
-        ext_list = [extensions] if isinstance(extensions, str) else extensions
-        for ext in ext_list:
-            clean_ext = ext.lower() if ext.startswith(".") else f".{ext.lower()}"
-            self._handlers[clean_ext] = handler_fn
-            logger.debug(f"Registered custom parser handler for extension: {clean_ext}")
+        for idx, page in enumerate(pages_data, start=1):
+            p_text = page.get("text", "").strip()
+            if not p_text:
+                continue
+            # Count table rows
+            total_tables += p_text.count("| --- |") + p_text.count("|---|")
+            full_parts.append(f"<!-- Page {idx} -->\n{p_text}")
 
-    def parse(self, file_path: Union[str, Path], category: str = "general") -> ParsedDocument:
-        """Parses any document file dynamically regardless of extension or structure.
+        full_md = "\n\n".join(full_parts)
+        return {
+            "content": full_md,
+            "total_pages": len(pages_data),
+            "table_count": max(total_tables, 1 if "|---|" in full_md or "| --- |" in full_md else 0),
+        }
+    except Exception as e:
+        logger.warning(f"pymupdf4llm failed on {path.name}: {e}. Falling back to basic fitz...")
+        import pymupdf as fitz
+        doc = fitz.open(str(path))
+        pages = [f"<!-- Page {i + 1} -->\n" + doc[i].get_text() for i in range(len(doc))]
+        doc.close()
+        return {"content": "\n\n".join(pages), "total_pages": len(pages), "table_count": 0}
 
-        Args:
-            file_path: Path to the document file.
-            category: Category, department, or directory path label.
 
-        Returns:
-            ParsedDocument object containing extracted content and structural elements.
-        """
-        path = Path(file_path).resolve()
-        if not path.exists():
-            return ParsedDocument(
-                file_path=str(path),
-                file_name=path.name,
-                file_type=path.suffix.lower() or "unknown",
-                category=category,
-                content="",
-                error=f"File not found: {path}",
-            )
+# verified
+def parse_docx(file_path: Union[str, Path]) -> Dict[str, Any]:
+    """Parses DOCX document sequentially, converting paragraphs, headings, and
 
-        file_ext = path.suffix.lower()
+    tables to GitHub-Flavored Markdown.
+    """
+    path = Path(file_path).resolve()
+    doc = docx.Document(str(path))
+    md_elements: List[str] = []
+    table_count = 0
 
-        # Check if specialized handler is registered
-        handler = self._handlers.get(file_ext)
-
-        if handler:
-            try:
-                return handler(path, category)
-            except Exception as e:
-                logger.warning(f"Specialized handler failed for {path.name} ({str(e)}). Retrying with universal text fallback...")
-
-        # Universal Fallback Parser: handles unknown extensions, code, plain text, markup, data files
-        return self._parse_universal_fallback(path, category)
-
-    def _register_default_handlers(self):
-        """Registers default handlers for standard formats."""
-        self.register_handler([".pdf"], self._parse_pdf)
-        self.register_handler([".docx", ".doc"], self._parse_docx)
-        self.register_handler([".pptx", ".ppt"], self._parse_pptx)
-        self.register_handler([".xlsx", ".xls"], self._parse_excel)
-        self.register_handler([".csv", ".tsv"], self._parse_csv)
-        self.register_handler([".json", ".jsonl"], self._parse_json)
-        self.register_handler([".md", ".markdown", ".txt", ".log", ".rst", ".yaml", ".yml", ".ini", ".conf", ".xml", ".html", ".py", ".js"], self._parse_text)
-
-    def _parse_pdf(self, path: Path, category: str) -> ParsedDocument:
-        """Parses PDF documents page by page using PyMuPDF (fitz)."""
-        if fitz is None:
-            logger.info("PyMuPDF unavailable. Falling back to universal text reader for PDF.")
-            return self._parse_universal_fallback(path, category)
-
-        with self._pdf_lock:
-            elements: List[DocumentElement] = []
-            full_text_blocks: List[str] = []
-
-            doc = fitz.open(str(path))
-            pdf_metadata = doc.metadata or {}
-
-            for page_num in range(len(doc)):
-                page = doc[page_num]
-                tabs = page.find_tables()
-                blocks = page.get_text("blocks")
-                processed_tables = set()
-                page_text_parts: List[str] = []
-                for b in blocks:
-                    block_rect = fitz.Rect(b[:4])
-                    block_text = b[4].strip()
-                    if not block_text:
-                        continue
-
-                    matched_table_idx = None
-                    for idx, tab in enumerate(tabs.tables):
-                        tab_rect = fitz.Rect(tab.bbox)
-                        if block_rect.intersects(tab_rect):
-                            matched_table_idx = idx
-                            break
-
-                    if matched_table_idx is not None:
-                        if matched_table_idx not in processed_tables:
-                            tab = tabs.tables[matched_table_idx]
-                            try:
-                                df = tab.to_pandas()
-                                md_table = df.to_markdown(index=False)
-                                page_text_parts.append(md_table)
-                            except Exception:
-                                page_text_parts.append(block_text)
-                            processed_tables.add(matched_table_idx)
-                    else:
-                        page_text_parts.append(block_text)
-
-                for idx, tab in enumerate(tabs.tables):
-                    if idx not in processed_tables:
-                        try:
-                            df = tab.to_pandas()
-                            md_table = df.to_markdown(index=False)
-                            page_text_parts.append(md_table)
-                        except Exception:
-                            pass
-
-                text = "\n\n".join(page_text_parts).strip()
-                if text:
-                    elements.append(
-                        DocumentElement(
-                            element_type="page",
-                            index=page_num + 1,
-                            title=f"Page {page_num + 1}",
-                            content=text,
-                            metadata={
-                                "page_number": page_num + 1,
-                                "table_count": len(tabs.tables),
-                                "has_tables": len(tabs.tables) > 0,
-                            },
-                        )
-                    )
-                    full_text_blocks.append(f"--- Page {page_num + 1} ---\n{text}")
-
-            doc.close()
-
-            return ParsedDocument(
-                file_path=str(path),
-                file_name=path.name,
-                file_type=".pdf",
-                category=category,
-                content="\n\n".join(full_text_blocks),
-                elements=elements,
-                metadata={
-                    "total_pages": len(elements),
-                    "author": pdf_metadata.get("author", ""),
-                    "title": pdf_metadata.get("title", ""),
-                    "creation_date": pdf_metadata.get("creationDate", ""),
-                },
-            )
-
-    def _parse_docx(self, path: Path, category: str) -> ParsedDocument:
-        """Parses DOCX documents including headings, paragraphs, and tables."""
-        if docx is None:
-            logger.info("python-docx unavailable. Falling back to universal text reader for DOCX.")
-            return self._parse_universal_fallback(path, category)
-
-        doc = docx.Document(str(path))
-        elements: List[DocumentElement] = []
-        full_text_blocks: List[str] = []
-
-        current_heading = "Overview"
-        current_section_lines: List[str] = []
-        section_idx = 1
-
-        for paragraph in doc.paragraphs:
-            text = paragraph.text.strip()
+    for child in doc.element.body:
+        if child.tag.endswith("p"):
+            p = Paragraph(child, doc)
+            text = p.text.strip()
             if not text:
                 continue
-
-            if paragraph.style.name.startswith("Heading"):
-                if current_section_lines:
-                    sec_text = "\n".join(current_section_lines)
-                    elements.append(
-                        DocumentElement(
-                            element_type="section",
-                            index=section_idx,
-                            title=current_heading,
-                            content=sec_text,
-                        )
-                    )
-                    full_text_blocks.append(f"## {current_heading}\n{sec_text}")
-                    section_idx += 1
-                    current_section_lines = []
-
-                current_heading = text
+            style_name = p.style.name.lower() if p.style else ""
+            if "heading 1" in style_name:
+                md_elements.append(f"\n# {text}\n")
+            elif "heading 2" in style_name:
+                md_elements.append(f"\n## {text}\n")
+            elif "heading 3" in style_name:
+                md_elements.append(f"\n### {text}\n")
+            elif "heading" in style_name:
+                md_elements.append(f"\n#### {text}\n")
+            elif "list bullet" in style_name or style_name.startswith("bullet"):
+                md_elements.append(f"- {text}")
+            elif "list number" in style_name:
+                md_elements.append(f"1. {text}")
             else:
-                current_section_lines.append(text)
+                md_elements.append(text)
 
-        if current_section_lines:
-            sec_text = "\n".join(current_section_lines)
-            elements.append(
-                DocumentElement(
-                    element_type="section",
-                    index=section_idx,
-                    title=current_heading,
-                    content=sec_text,
-                )
-            )
-            full_text_blocks.append(f"## {current_heading}\n{sec_text}")
-
-        # Parse tables
-        table_blocks: List[str] = []
-        for tbl_idx, table in enumerate(doc.tables, start=1):
-            table_data = []
+        elif child.tag.endswith("tbl"):
+            table = Table(child, doc)
+            rows_data: List[List[str]] = []
             for row in table.rows:
-                row_data = [cell.text.strip().replace("\n", " ") for cell in row.cells]
-                table_data.append(" | ".join(row_data))
+                cells = [cell.text.strip().replace("\n", " ").replace("|", "\\|") for cell in row.cells]
+                rows_data.append(cells)
 
-            if table_data:
-                table_str = "\n".join(table_data)
-                table_blocks.append(table_str)
-                elements.append(
-                    DocumentElement(
-                        element_type="table",
-                        index=tbl_idx,
-                        title=f"Table {tbl_idx}",
-                        content=table_str,
-                    )
-                )
+            if rows_data:
+                table_count += 1
+                header = rows_data[0]
+                header_line = "| " + " | ".join(header) + " |"
+                separator_line = "| " + " | ".join([":---"] * len(header)) + " |"
+                body_lines = []
+                for row in rows_data[1:]:
+                    if len(row) < len(header):
+                        row.extend([""] * (len(header) - len(row)))
+                    elif len(row) > len(header):
+                        row = row[: len(header)]
+                    body_lines.append("| " + " | ".join(row) + " |")
 
-        if table_blocks:
-            full_text_blocks.append("--- Tables ---\n" + "\n\n".join(table_blocks))
+                md_table = "\n".join([header_line, separator_line] + body_lines)
+                md_elements.append(f"\n{md_table}\n")
 
-        return ParsedDocument(
-            file_path=str(path),
-            file_name=path.name,
-            file_type=".docx",
-            category=category,
-            content="\n\n".join(full_text_blocks),
-            elements=elements,
-            metadata={
-                "paragraph_count": len(doc.paragraphs),
-                "table_count": len(doc.tables),
-                "section_count": len(elements),
-            },
-        )
+    return {
+        "content": "\n\n".join(md_elements),
+        "table_count": table_count,
+        "paragraph_count": len(doc.paragraphs),
+    }
 
-    def _parse_pptx(self, path: Path, category: str) -> ParsedDocument:
-        """Parses PPTX presentations slide by slide including shapes, tables, and notes."""
-        if Presentation is None:
-            logger.info("python-pptx unavailable. Falling back to universal text reader for PPTX.")
-            return self._parse_universal_fallback(path, category)
+# verified
+def parse_pptx(file_path: Union[str, Path]) -> Dict[str, Any]:
+    """Parses PPTX presentation slide-by-slide preserving title hierarchy, bullet
 
-        prs = Presentation(str(path))
-        elements: List[DocumentElement] = []
-        full_text_blocks: List[str] = []
+    indentation, tables, and presenter notes.
+    """
+    path = Path(file_path).resolve()
+    prs = Presentation(str(path))
+    slide_parts: List[str] = []
+    table_count = 0
 
-        for slide_idx, slide in enumerate(prs.slides, start=1):
-            slide_text_parts: List[str] = []
-            slide_title = f"Slide {slide_idx}"
-            if slide.shapes.title and slide.shapes.title.text:
-                slide_title = slide.shapes.title.text.strip()
+    for idx, slide in enumerate(prs.slides, start=1):
+        slide_title = f"Slide {idx}"
+        if slide.shapes.title and slide.shapes.title.text:
+            slide_title = slide.shapes.title.text.strip().replace("\n", " ")
 
-            for shape in slide.shapes:
-                if shape.has_text_frame:
-                    for paragraph in shape.text_frame.paragraphs:
-                        text = paragraph.text.strip()
-                        if text:
-                            slide_text_parts.append(text)
-                elif shape.has_table:
-                    for row in shape.table.rows:
-                        row_cells = [cell.text.strip().replace("\n", " ") for cell in row.cells]
-                        slide_text_parts.append(" | ".join(row_cells))
+        slide_md: List[str] = [f"## Slide {idx}: {slide_title}\n"]
 
-            notes_text = ""
-            if slide.has_notes_slide and slide.notes_slide.notes_text_frame:
-                notes_text = slide.notes_slide.notes_text_frame.text.strip()
-                if notes_text:
-                    slide_text_parts.append(f"[Speaker Notes: {notes_text}]")
+        for shape in slide.shapes:
+            if shape.has_text_frame:
+                for p in shape.text_frame.paragraphs:
+                    text = p.text.strip()
+                    if not text or text == slide_title:
+                        continue
+                    indent = "  " * (p.level if hasattr(p, "level") and p.level else 0)
+                    slide_md.append(f"{indent}- {text}")
 
-            slide_content = "\n".join(slide_text_parts)
-            if slide_content:
-                elements.append(
-                    DocumentElement(
-                        element_type="slide",
-                        index=slide_idx,
-                        title=slide_title,
-                        content=slide_content,
-                        metadata={"has_notes": bool(notes_text)},
-                    )
-                )
-                full_text_blocks.append(f"--- Slide {slide_idx}: {slide_title} ---\n{slide_content}")
+            elif shape.has_table:
+                table_count += 1
+                rows_data = []
+                for r in shape.table.rows:
+                    row_cells = [cell.text.strip().replace("\n", " ").replace("|", "\\|") for cell in r.cells]
+                    rows_data.append(row_cells)
+                if rows_data:
+                    header = rows_data[0]
+                    header_line = "| " + " | ".join(header) + " |"
+                    separator_line = "| " + " | ".join([":---"] * len(header)) + " |"
+                    body_lines = ["| " + " | ".join(r) + " |" for r in rows_data[1:]]
+                    slide_md.append("\n" + "\n".join([header_line, separator_line] + body_lines) + "\n")
 
-        return ParsedDocument(
-            file_path=str(path),
-            file_name=path.name,
-            file_type=".pptx",
-            category=category,
-            content="\n\n".join(full_text_blocks),
-            elements=elements,
-            metadata={"total_slides": len(prs.slides)},
-        )
+        if slide.has_notes_slide and slide.notes_slide.notes_text_frame:
+            notes = slide.notes_slide.notes_text_frame.text.strip()
+            if notes:
+                slide_md.append(f"\n> **Presenter Notes:** {notes}\n")
 
-    def _format_dataframe(self, df: Any) -> str:
-        """Safely converts pandas DataFrame to markdown table or plain text format."""
-        try:
-            return df.to_markdown(index=False)
-        except Exception:
-            return df.to_string(index=False)
+        slide_parts.append("\n".join(slide_md))
 
-    def _parse_excel(self, path: Path, category: str) -> ParsedDocument:
-        """Parses Excel workbooks (.xlsx, .xls) sheet by sheet."""
-        if pd is None or openpyxl is None:
-            logger.debug("pandas or openpyxl unavailable. Falling back to universal text reader for Excel.")
-            return self._parse_universal_fallback(path, category)
+    return {
+        "content": "\n\n---\n\n".join(slide_parts),
+        "slide_count": len(prs.slides),
+        "table_count": table_count,
+    }
 
-        excel_file = pd.ExcelFile(str(path))
-        elements: List[DocumentElement] = []
-        full_text_blocks: List[str] = []
+# verified
+def parse_excel(file_path: Union[str, Path]) -> Dict[str, Any]:
+    """Parses Excel workbooks (.xlsx, .xls) sheet-by-sheet into GitHub-Flavored
 
-        for sheet_idx, sheet_name in enumerate(excel_file.sheet_names, start=1):
-            df = pd.read_excel(excel_file, sheet_name=sheet_name)
-            df = df.dropna(how="all")
+    Markdown tables.
+    """
+    path = Path(file_path).resolve()
+    excel_file = pd.ExcelFile(str(path), engine="openpyxl")
+    sheet_parts: List[str] = []
+    total_records = 0
 
-            if not df.empty:
-                sheet_text = self._format_dataframe(df)
-                elements.append(
-                    DocumentElement(
-                        element_type="sheet",
-                        index=sheet_idx,
-                        title=sheet_name,
-                        content=sheet_text,
-                        metadata={"rows": len(df), "columns": len(df.columns)},
-                    )
-                )
-                full_text_blocks.append(f"--- Sheet: {sheet_name} ---\n{sheet_text}")
-
-        return ParsedDocument(
-            file_path=str(path),
-            file_name=path.name,
-            file_type=path.suffix.lower(),
-            category=category,
-            content="\n\n".join(full_text_blocks),
-            elements=elements,
-            metadata={
-                "total_sheets": len(excel_file.sheet_names),
-                "sheet_names": excel_file.sheet_names,
-            },
-        )
-
-    def _parse_csv(self, path: Path, category: str) -> ParsedDocument:
-        """Parses CSV/TSV files into table representations."""
-        if pd is None:
-            return self._parse_text(path, category)
-
-        sep = "\t" if path.suffix.lower() == ".tsv" else ","
-        df = pd.read_csv(str(path), sep=sep)
+    for sheet_name in excel_file.sheet_names:
+        df = pd.read_excel(excel_file, sheet_name=sheet_name)
         df = df.dropna(how="all")
-        content = self._format_dataframe(df)
+        if df.empty:
+            continue
 
-        element = DocumentElement(
-            element_type="sheet",
-            index=1,
-            title=path.stem,
-            content=content,
-            metadata={"rows": len(df), "columns": len(df.columns)},
-        )
-
-        return ParsedDocument(
-            file_path=str(path),
-            file_name=path.name,
-            file_type=path.suffix.lower(),
-            category=category,
-            content=content,
-            elements=[element],
-            metadata={"rows": len(df), "columns": len(df.columns)},
-        )
-
-    def _parse_json(self, path: Path, category: str) -> ParsedDocument:
-        """Parses JSON / JSONL documents dynamically."""
+        total_records += len(df)
+        sheet_md = [f"### Sheet: {sheet_name}\n"]
+        sheet_md.append(f"*Total Records: {len(df)} | Columns: {len(df.columns)}*\n")
         try:
-            with open(path, "r", encoding="utf-8", errors="replace") as f:
-                data = json.load(f)
-            formatted = json.dumps(data, indent=2)
+            table_str = df.to_markdown(index=False)
         except Exception:
-            return self._parse_text(path, category)
+            table_str = df.to_string(index=False)
+        sheet_md.append(table_str)
+        sheet_parts.append("\n".join(sheet_md))
 
-        element = DocumentElement(
-            element_type="document",
-            index=1,
-            title=path.stem,
-            content=formatted,
-        )
+    return {
+        "content": "\n\n---\n\n".join(sheet_parts),
+        "total_sheets": len(excel_file.sheet_names),
+        "total_records": total_records,
+        "table_count": len(sheet_parts),
+    }
 
-        return ParsedDocument(
-            file_path=str(path),
-            file_name=path.name,
-            file_type=path.suffix.lower(),
-            category=category,
-            content=formatted,
-            elements=[element],
-            metadata={"data_type": type(data).__name__},
-        )
+# verified
+def parse_json(file_path: Union[str, Path]) -> Dict[str, Any]:
+    """Parses JSON documents dynamically, converting structured catalogs
 
-    def _parse_text(self, path: Path, category: str) -> ParsedDocument:
-        """Parses plain text, code, markup, or configuration files."""
-        content = self._read_file_text_with_encodings(path)
-        lines = content.splitlines()
+    (like system_catalog.json) into human-readable Markdown tables and profiles.
+    """
+    path = Path(file_path).resolve()
+    with open(path, "r", encoding="utf-8", errors="replace") as f:
+        data = json.load(f)
 
-        element = DocumentElement(
-            element_type="document",
-            index=1,
-            title=path.stem,
-            content=content,
-            metadata={"line_count": len(lines)},
-        )
+    # Check if this is the system catalog format
+    if isinstance(data, dict) and ("systems" in data or "catalog_metadata" in data):
+        md_parts: List[str] = []
+        meta = data.get("catalog_metadata", {})
+        md_parts.append(f"# {meta.get('catalog_id', 'System Catalog')} - System Inventory\n")
+        md_parts.append(f"> **Version:** {meta.get('version')} | **Effective Date:** {meta.get('effective_date')} | **Review:** {meta.get('last_review')}")
+        md_parts.append(f"> **Owner:** {meta.get('owner')} | **Classification:** {meta.get('classification')}")
+        md_parts.append(f"> **Description:** {meta.get('description', '')}\n")
 
-        return ParsedDocument(
-            file_path=str(path),
-            file_name=path.name,
-            file_type=path.suffix.lower() or ".txt",
-            category=category,
-            content=content,
-            elements=[element],
-            metadata={"line_count": len(lines), "char_count": len(content)},
-        )
+        envs = data.get("environment_definitions", {})
+        if envs:
+            md_parts.append("## Environment Definitions\n")
+            md_parts.append("| Environment | Definition / Purpose |")
+            md_parts.append("| :--- | :--- |")
+            for env_name, env_desc in envs.items():
+                md_parts.append(f"| {env_name} | {env_desc} |")
+            md_parts.append("")
 
-    def _parse_universal_fallback(self, path: Path, category: str) -> ParsedDocument:
-        """Universal Fallback Parser for unknown extensions or unhandled formats.
+        systems = data.get("systems", [])
+        if systems:
+            md_parts.append("## Systems Summary Matrix\n")
+            headers = ["System ID", "Name", "Category", "Criticality", "Environment", "Availability", "RTO (min)", "RPO (min)", "Primary Region", "Dependencies"]
+            md_parts.append("| " + " | ".join(headers) + " |")
+            md_parts.append("| " + " | ".join([":---"] * len(headers)) + " |")
+            for s in systems:
+                deps = ", ".join(s.get("dependencies", [])) or "None"
+                row = [
+                    s.get("system_id", ""),
+                    s.get("name", "").replace("|", "\\|"),
+                    s.get("category", ""),
+                    s.get("criticality", ""),
+                    s.get("environment", ""),
+                    s.get("availability_target", ""),
+                    str(s.get("rto_minutes", "")),
+                    str(s.get("rpo_minutes", "")),
+                    s.get("primary_region", ""),
+                    deps,
+                ]
+                md_parts.append("| " + " | ".join(row) + " |")
+            md_parts.append("")
 
-        Tries reading as multi-encoding text. If binary, extracts printable string blocks.
-        Guarantees that NO document is dropped or fails silently!
-        """
-        content = self._read_file_text_with_encodings(path)
+            md_parts.append("## Detailed System Profiles\n")
+            for s in systems:
+                md_parts.append(f"### {s.get('system_id')}: {s.get('name')}\n")
+                md_parts.append(f"- **Category:** {s.get('category')}")
+                md_parts.append(f"- **Criticality:** {s.get('criticality')}")
+                md_parts.append(f"- **Owner Team:** {s.get('owner_team')}")
+                md_parts.append(f"- **Business Owner:** {s.get('business_owner')}")
+                md_parts.append(f"- **Environment:** {s.get('environment')}")
+                md_parts.append(f"- **Data Classification:** {s.get('data_classification')}")
+                md_parts.append(f"- **Availability Target:** {s.get('availability_target')}")
+                md_parts.append(f"- **RTO:** {s.get('rto_minutes')} min | **RPO:** {s.get('rpo_minutes')} min")
+                md_parts.append(f"- **Primary Region:** {s.get('primary_region')} | **Recovery Region:** {s.get('recovery_region')}")
+                md_parts.append(f"- **Authentication:** {s.get('authentication')}")
+                deps = ", ".join(s.get("dependencies", [])) or "None"
+                md_parts.append(f"- **Dependencies:** {deps}")
+                md_parts.append(f"- **Vendor:** {s.get('vendor')}")
+                md_parts.append(f"- **Last Review:** {s.get('last_review')}\n")
 
-        # Check if content looks binary or unreadable
-        printable_ratio = len(re.sub(r"[^\x20-\x7E\s]", "", content)) / (len(content) or 1)
+        return {
+            "content": "\n".join(md_parts),
+            "table_count": 2,
+            "total_systems": len(systems),
+        }
 
-        if printable_ratio < 0.6:
-            # Binary fallback: extract printable character sequences (strings)
-            raw_bytes = path.read_bytes()
-            ascii_strings = re.findall(rb"[\x20-\x7E]{4,}", raw_bytes)
-            extracted_text = "\n".join(s.decode("ascii", errors="ignore") for s in ascii_strings)
-            content = f"[Binary Document Extracted Strings]\n\n{extracted_text}"
+    # Generic JSON formatting
+    formatted = json.dumps(data, indent=2)
+    return {"content": f"```json\n{formatted}\n```", "table_count": 0}
 
-        element = DocumentElement(
-            element_type="document",
-            index=1,
-            title=path.stem,
-            content=content,
-        )
+# verified
+def parse_text(file_path: Union[str, Path]) -> Dict[str, Any]:
+    """Parses Markdown, Text, or configuration files across multiple encodings."""
+    path = Path(file_path).resolve()
+    encodings = ["utf-8", "utf-8-sig", "latin-1", "cp1252"]
+    content = ""
+    for enc in encodings:
+        try:
+            with open(path, "r", encoding=enc) as f:
+                content = f.read()
+            break
+        except Exception:
+            continue
 
-        return ParsedDocument(
-            file_path=str(path),
-            file_name=path.name,
-            file_type=path.suffix.lower() or "unknown",
-            category=category,
-            content=content,
-            elements=[element],
-            metadata={"parsed_via": "universal_fallback", "char_count": len(content)},
-        )
-
-    def _read_file_text_with_encodings(self, path: Path) -> str:
-        """Reads file text trying multiple character encodings."""
-        encodings = ["utf-8", "utf-8-sig", "latin-1", "cp1252", "iso-8859-1"]
-        for enc in encodings:
-            try:
-                with open(path, "r", encoding=enc) as f:
-                    return f.read()
-            except UnicodeDecodeError:
-                continue
-            except Exception:
-                break
-
-        # Fallback reading with character replacement
+    if not content:
         with open(path, "r", encoding="utf-8", errors="replace") as f:
-            return f.read()
+            content = f.read()
 
+    table_count = content.count("| --- |") + content.count("|---|")
+    return {"content": content, "table_count": table_count}
 
-if __name__ == "__main__":
-    # Test script for dynamic DocumentParser
-    parser = DocumentParser()
-    test_dir = Path(r"d:\RAG\Datasource")
-    if test_dir.exists():
-        print(f"Testing Dynamic DocumentParser on files in {test_dir}...")
-        for sample_file in test_dir.rglob("*"):
-            if sample_file.is_file() and not sample_file.name.startswith("~$") and sample_file.name != "readme.md":
-                res = parser.parse(sample_file, category=sample_file.parent.name)
-                print(f"Parsed [{res.category}] {res.file_name} ({res.file_type}): Elements={res.total_elements}, Chars={len(res.content)}, Error={res.error}")
+# verified
+def parse_document(file_path: Union[str, Path], category: str = "general") -> Document:
+    """Dispatches parsing to the appropriate function by file extension and
+
+    returns a LangChain Document.
+    """
+    path = Path(file_path).resolve()
+    ext = path.suffix.lower()
+    clean_stem = clean_stem_name(path.stem)
+
+    if ext == ".pdf":
+        result = parse_pdf(path)
+    elif ext in (".docx", ".doc"):
+        result = parse_docx(path)
+    elif ext in (".pptx", ".ppt"):
+        result = parse_pptx(path)
+    elif ext in (".xlsx", ".xls"):
+        result = parse_excel(path)
+    elif ext in (".json", ".jsonl"):
+        result = parse_json(path)
+    else:
+        result = parse_text(path)
+
+    content = result.get("content", "")
+    table_count = result.get("table_count", 0)
+
+    metadata: Dict[str, Any] = {
+        "file_name": path.name,
+        "clean_name": f"{clean_stem}.md",
+        "category": category,
+        "file_type": ext,
+        "file_size_bytes": path.stat().st_size if path.exists() else 0,
+        "has_tables": table_count > 0,
+        "table_count": table_count,
+        "breadcrumbs": f"{category} > {path.name}",
+    }
+
+    # Add extra metadata extracted by parsers
+    for k, v in result.items():
+        if k not in ("content", "table_count"):
+            metadata[k] = v
+
+    return Document(page_content=content, metadata=metadata)
