@@ -225,12 +225,40 @@ def load_embedded_chunks_from_json(
 # CHUNK EMBEDDING PIPELINE (PROCESS & EMBED ALL CHUNKS)
 # =====================================================================
 
+def load_chunks_from_manifest(manifest_path: Optional[Union[str, Path]] = None) -> List[Document]:
+    """Loads pre-chunked documents directly from chunks_manifest.json without re-chunking.
+
+    Args:
+        manifest_path: Path to chunks_manifest.json (defaults dynamically).
+
+    Returns:
+        List of LangChain Document objects.
+    """
+    file_path = Path(manifest_path).resolve() if manifest_path else DEFAULT_CHUNKS_FILE
+    if not file_path.exists():
+        raise FileNotFoundError(
+            f"Chunks manifest not found at {file_path}. Please run chunking.py first."
+        )
+
+    logger.info(f"Loading pre-computed chunks from manifest: {file_path}")
+    with open(file_path, "r", encoding="utf-8") as f:
+        manifest_data = json.load(f)
+
+    raw_items = manifest_data.get("chunks", [])
+    doc_chunks = [
+        Document(page_content=item.get("content", ""), metadata=item.get("metadata", {}))
+        for item in raw_items
+    ]
+    logger.info(f"Loaded {len(doc_chunks)} chunks directly from JSON.")
+    return doc_chunks
+
+
 def process_and_embed_all_chunks(
     chunks_path: Optional[Union[str, Path]] = None,
     output_path: Optional[Union[str, Path]] = None,
     batch_size: int = 64,
     ) -> List[Dict[str, Any]]:
-    """Loads all document chunks, generates Cohere embeddings,
+    """Loads all pre-computed document chunks directly from JSON, generates Cohere embeddings,
 
     and saves the embedded vectors to disk for vector database indexing.
 
@@ -242,27 +270,10 @@ def process_and_embed_all_chunks(
     Returns:
         List of dictionaries with chunk_id, content, metadata, and embedding vector.
     """
-    manifest_file = Path(chunks_path).resolve() if chunks_path else DEFAULT_CHUNKS_FILE
+    # 1. Load directly from the pre-computed JSON file
+    doc_chunks = load_chunks_from_manifest(chunks_path)
 
-    # If chunks manifest does not exist, generate chunks dynamically using chunking module
-    if not manifest_file.exists():
-        logger.info(f"Chunks manifest not found at {manifest_file}. Generating chunks first...")
-        from chunking import chunk_all_documents, save_chunks_to_json
-        doc_chunks = chunk_all_documents()
-        save_chunks_to_json(doc_chunks, manifest_file)
-    else:
-        logger.info(f"Loading chunks from manifest: {manifest_file}")
-        with open(manifest_file, "r", encoding="utf-8") as f:
-            manifest_data = json.load(f)
-        raw_items = manifest_data.get("chunks", [])
-        doc_chunks = [
-            Document(page_content=item.get("content", ""), metadata=item.get("metadata", {}))
-            for item in raw_items
-        ]
-
-    logger.info(f"Loaded {len(doc_chunks)} chunks for embedding.")
-
-    # Initialize Cohere embeddings
+    # 2. Initialize Cohere embeddings
     embeddings = get_cohere_embeddings()
 
     # Generate embeddings across all chunks
