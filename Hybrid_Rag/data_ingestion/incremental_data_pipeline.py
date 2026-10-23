@@ -75,7 +75,7 @@ def run_incremental_datapipeline(
     incremental: bool = True,
     max_workers: int = 4,
     force_publish: bool = False
-) -> Dict[str, Any]:
+    ) -> Dict[str, Any]:
     """Executes the production incremental ingestion and inline validation pipeline.
 
     Args:
@@ -441,7 +441,7 @@ def print_pipeline_scorecard(
     deleted_count: int,
     elapsed_seconds: float,
     status: str
-) -> None:
+    ) -> None:
     """Prints a formatted operational telemetry scorecard to stdout."""
     print("\n" + "=" * 90)
     print("HYBRID RAG INCREMENTAL INGESTION & INLINE VALIDATION SCORECARD")

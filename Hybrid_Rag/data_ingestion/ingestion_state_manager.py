@@ -97,7 +97,7 @@ def generate_file_id(source_rel_path: str) -> str:
 def detect_catalog_changes(
     source_dir: Path,
     state: Dict[str, Any]
-) -> Dict[str, Any]:
+    ) -> Dict[str, Any]:
     """Inspects raw datasource files against stored state to detect changes.
 
     Returns:
@@ -194,7 +194,7 @@ def record_document_disposition(
     validation_reasons: List[str],
     clean_file_rel: Optional[str] = None,
     error_message: Optional[str] = None
-) -> None:
+    ) -> None:
     """Updates the state record for a single processed document."""
     entries = state.setdefault("entries", {})
     entry = entries.get(source_rel_path, {})
