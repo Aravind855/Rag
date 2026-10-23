@@ -1,0 +1,29 @@
+{
+  "report_name": "Hybrid RAG Ingestion Pipeline Health & Observability Audit",
+  "timestamp": "2026-10-23T11:05:25.886601+00:00",
+  "health_status": "HEALTHY",
+  "metrics": {
+    "total_tracked_files": 21,
+    "published_active_files": 21,
+    "quarantined_files": 0,
+    "failed_files": 0,
+    "average_quality_score_pct": 100.0,
+    "total_clean_words": 36164,
+    "total_clean_characters": 273492,
+    "total_clean_tables": 126,
+    "department_document_distribution": {
+      "engineering": 4,
+      "finance": 3,
+      "hr": 4,
+      "operations": 4,
+      "sales": 3,
+      "security": 3
+    }
+  },
+  "recent_delta": {
+    "delta_timestamp": "2026-10-23T11:04:59.386577+00:00",
+    "delta_files_count": 21
+  },
+  "quarantined_details": [],
+  "failed_details": []
+}

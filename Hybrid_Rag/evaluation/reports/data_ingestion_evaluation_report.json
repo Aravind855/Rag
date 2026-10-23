@@ -1,0 +1,577 @@
+{
+  "evaluation_name": "Data Ingestion, Parsing & Cleaning Evaluation",
+  "timestamp": "2026-10-23T09:32:20Z",
+  "overall_status": "PASS",
+  "elapsed_seconds": 0.2,
+  "scorecard": {
+    "File Coverage (%)": 100.0,
+    "Extraction Success Rate (%)": 100.0,
+    "Content Extraction Coverage (%)": 100.0,
+    "Critical Field Accuracy (%)": 100.0,
+    "Heading Integrity (%)": 100.0,
+    "Table Integrity (%)": 100.0,
+    "Metadata Completeness (%)": 100.0,
+    "Empty Output Rate (%)": 0.0,
+    "Duplicate Rate (%)": 0.0
+  },
+  "dimension_a_file_coverage": {
+    "total_source_files_found": 22,
+    "expected_department_documents": 21,
+    "processed_documents": 21,
+    "missing_documents": [],
+    "meta_or_root_documents": [
+      "readme.md"
+    ],
+    "file_coverage_pct": 100.0,
+    "extraction_success_rate_pct": 100.0,
+    "extension_breakdown": {
+      ".md": 3,
+      ".pptx": 2,
+      ".pdf": 7,
+      ".docx": 5,
+      ".xlsx": 3,
+      ".json": 1,
+      ".txt": 1
+    }
+  },
+  "dimension_b_content_completeness": {
+    "content_extraction_coverage_pct": 100.0,
+    "total_structural_units_expected": 117,
+    "total_structural_units_extracted": 117,
+    "records": [
+      {
+        "source_path": "engineering/api_standards.md",
+        "format": ".md",
+        "status": "PASS",
+        "discrepancies": [],
+        "raw_chars": 5851,
+        "clean_chars": 6115
+      },
+      {
+        "source_path": "engineering/architecture_overview.pptx",
+        "format": ".pptx",
+        "status": "PASS",
+        "discrepancies": [],
+        "expected_slides": 14,
+        "extracted_slides": 14
+      },
+      {
+        "source_path": "finance/expense_categories.xlsx",
+        "format": ".xlsx",
+        "status": "PASS",
+        "discrepancies": [],
+        "expected_sheets": 5,
+        "extracted_sheets": 5,
+        "expected_records": 144,
+        "extracted_records": 144
+      },
+      {
+        "source_path": "engineering/engineering_guidelines.docx",
+        "format": ".docx",
+        "status": "PASS",
+        "discrepancies": [],
+        "expected_tables": 7,
+        "extracted_tables": 7
+      },
+      {
+        "source_path": "finance/reimbursement_policy.docx",
+        "format": ".docx",
+        "status": "PASS",
+        "discrepancies": [],
+        "expected_tables": 6,
+        "extracted_tables": 6
+      },
+      {
+        "source_path": "engineering/deployment_guide.pdf",
+        "format": ".pdf",
+        "status": "PASS",
+        "discrepancies": [],
+        "expected_pages": 6,
+        "extracted_pages": 6
+      },
+      {
+        "source_path": "hr/employees(1).xlsx",
+        "format": ".xlsx",
+        "status": "PASS",
+        "discrepancies": [],
+        "expected_sheets": 5,
+        "extracted_sheets": 5,
+        "expected_records": 485,
+        "extracted_records": 485
+      },
+      {
+        "source_path": "hr/remote_work_policy.docx",
+        "format": ".docx",
+        "status": "PASS",
+        "discrepancies": [],
+        "expected_tables": 7,
+        "extracted_tables": 7
+      },
+      {
+        "source_path": "operations/business_continuity.pptx",
+        "format": ".pptx",
+        "status": "PASS",
+        "discrepancies": [],
+        "expected_slides": 12,
+        "extracted_slides": 12
+      },
+      {
+        "source_path": "finance/expense_policy.pdf",
+        "format": ".pdf",
+        "status": "PASS",
+        "discrepancies": [],
+        "expected_pages": 6,
+        "extracted_pages": 6
+      },
+      {
+        "source_path": "operations/system_catalog.json",
+        "format": ".json",
+        "status": "PASS",
+        "discrepancies": [],
+        "raw_chars": 14665,
+        "clean_chars": 13196
+      },
+      {
+        "source_path": "operations/vendor_management.docx",
+        "format": ".docx",
+        "status": "PASS",
+        "discrepancies": [],
+        "expected_tables": 5,
+        "extracted_tables": 5
+      },
+      {
+        "source_path": "sales/commission_rules.xlsx",
+        "format": ".xlsx",
+        "status": "PASS",
+        "discrepancies": [],
+        "expected_sheets": 4,
+        "extracted_sheets": 4,
+        "expected_records": 118,
+        "extracted_records": 118
+      },
+      {
+        "source_path": "sales/discount_policy.docx",
+        "format": ".docx",
+        "status": "PASS",
+        "discrepancies": [],
+        "expected_tables": 6,
+        "extracted_tables": 6
+      },
+      {
+        "source_path": "hr/benefits_policy(1).pdf",
+        "format": ".pdf",
+        "status": "PASS",
+        "discrepancies": [],
+        "expected_pages": 6,
+        "extracted_pages": 6
+      },
+      {
+        "source_path": "security/access_control.md",
+        "format": ".md",
+        "status": "PASS",
+        "discrepancies": [],
+        "raw_chars": 5120,
+        "clean_chars": 5387
+      },
+      {
+        "source_path": "security/incident_response.txt",
+        "format": ".txt",
+        "status": "PASS",
+        "discrepancies": [],
+        "raw_chars": 9716,
+        "clean_chars": 10029
+      },
+      {
+        "source_path": "hr/employee_handbook(1).pdf",
+        "format": ".pdf",
+        "status": "PASS",
+        "discrepancies": [],
+        "expected_pages": 6,
+        "extracted_pages": 6
+      },
+      {
+        "source_path": "operations/procurement_policy.pdf",
+        "format": ".pdf",
+        "status": "PASS",
+        "discrepancies": [],
+        "expected_pages": 6,
+        "extracted_pages": 6
+      },
+      {
+        "source_path": "sales/sales_playbook.pdf",
+        "format": ".pdf",
+        "status": "PASS",
+        "discrepancies": [],
+        "expected_pages": 6,
+        "extracted_pages": 6
+      },
+      {
+        "source_path": "security/security_policy.pdf",
+        "format": ".pdf",
+        "status": "PASS",
+        "discrepancies": [],
+        "expected_pages": 6,
+        "extracted_pages": 6
+      }
+    ]
+  },
+  "dimension_c_content_fidelity": {
+    "critical_field_accuracy_pct": 100.0,
+    "total_critical_fields_tested": 23,
+    "fields_preserved": 23,
+    "fields_missing": 0,
+    "field_results": [
+      {
+        "entity": "NC-ENG-API-2026-08",
+        "type": "Document_ID",
+        "expected_file": "engineering/api_standards.md",
+        "matched_in_target": true,
+        "matched_in_corpus": true,
+        "status": "PASS"
+      },
+      {
+        "entity": "PROJECT_NOT_FOUND",
+        "type": "Error_Code",
+        "expected_file": "engineering/api_standards.md",
+        "matched_in_target": true,
+        "matched_in_corpus": true,
+        "status": "PASS"
+      },
+      {
+        "entity": "SCREAMING_SNAKE_CASE",
+        "type": "Naming_Rule",
+        "expected_file": "engineering/api_standards.md",
+        "matched_in_target": true,
+        "matched_in_corpus": true,
+        "status": "PASS"
+      },
+      {
+        "entity": "SYS-001",
+        "type": "System_ID",
+        "expected_file": "operations/system_catalog.json",
+        "matched_in_target": true,
+        "matched_in_corpus": true,
+        "status": "PASS"
+      },
+      {
+        "entity": "SYS-002",
+        "type": "System_ID",
+        "expected_file": "operations/system_catalog.json",
+        "matched_in_target": true,
+        "matched_in_corpus": true,
+        "status": "PASS"
+      },
+      {
+        "entity": "NC-OPS-VND-2026-08",
+        "type": "Document_ID",
+        "expected_file": "operations/vendor_management.docx",
+        "matched_in_target": true,
+        "matched_in_corpus": true,
+        "status": "PASS"
+      },
+      {
+        "entity": "NC-SEC-ACL-2026-08",
+        "type": "Document_ID",
+        "expected_file": "security/access_control.md",
+        "matched_in_target": true,
+        "matched_in_corpus": true,
+        "status": "PASS"
+      },
+      {
+        "entity": "NC-SEC-IR-2026-08",
+        "type": "Document_ID",
+        "expected_file": "security/incident_response.txt",
+        "matched_in_target": true,
+        "matched_in_corpus": true,
+        "status": "PASS"
+      },
+      {
+        "entity": "TRV-AIR",
+        "type": "Category_Code",
+        "expected_file": "finance/expense_categories.xlsx",
+        "matched_in_target": true,
+        "matched_in_corpus": true,
+        "status": "PASS"
+      },
+      {
+        "entity": "TRV-HOT",
+        "type": "Category_Code",
+        "expected_file": "finance/expense_categories.xlsx",
+        "matched_in_target": true,
+        "matched_in_corpus": true,
+        "status": "PASS"
+      },
+      {
+        "entity": "INR 6,500",
+        "type": "Currency_Limit",
+        "expected_file": "hr/employee_handbook(1).pdf",
+        "matched_in_target": true,
+        "matched_in_corpus": true,
+        "status": "PASS"
+      },
+      {
+        "entity": "INR 1,200",
+        "type": "Currency_Limit",
+        "expected_file": "hr/employee_handbook(1).pdf",
+        "matched_in_target": true,
+        "matched_in_corpus": true,
+        "status": "PASS"
+      },
+      {
+        "entity": "INR 3,500",
+        "type": "Currency_Limit",
+        "expected_file": "finance/expense_policy.pdf",
+        "matched_in_target": true,
+        "matched_in_corpus": true,
+        "status": "PASS"
+      },
+      {
+        "entity": "INR 1,000",
+        "type": "Threshold_Limit",
+        "expected_file": "finance/expense_categories.xlsx",
+        "matched_in_target": false,
+        "matched_in_corpus": true,
+        "status": "PASS"
+      },
+      {
+        "entity": "INR 2,000",
+        "type": "Gift_Limit",
+        "expected_file": "hr/employee_handbook(1).pdf",
+        "matched_in_target": true,
+        "matched_in_corpus": true,
+        "status": "PASS"
+      },
+      {
+        "entity": "99.95%",
+        "type": "SLA_Percentage",
+        "expected_file": "operations/system_catalog.json",
+        "matched_in_target": true,
+        "matched_in_corpus": true,
+        "status": "PASS"
+      },
+      {
+        "entity": "99.9%",
+        "type": "SLA_Percentage",
+        "expected_file": "operations/system_catalog.json",
+        "matched_in_target": true,
+        "matched_in_corpus": true,
+        "status": "PASS"
+      },
+      {
+        "entity": "15 minutes",
+        "type": "Time_SLA",
+        "expected_file": "operations/system_catalog.json",
+        "matched_in_target": false,
+        "matched_in_corpus": true,
+        "status": "PASS"
+      },
+      {
+        "entity": "3 business days",
+        "type": "Booking_Window",
+        "expected_file": "finance/expense_policy.pdf",
+        "matched_in_target": true,
+        "matched_in_corpus": true,
+        "status": "PASS"
+      },
+      {
+        "entity": "7 business days",
+        "type": "Booking_Window",
+        "expected_file": "finance/expense_policy.pdf",
+        "matched_in_target": true,
+        "matched_in_corpus": true,
+        "status": "PASS"
+      },
+      {
+        "entity": "prohibited",
+        "type": "Policy_Directive",
+        "expected_file": "finance/expense_policy.pdf",
+        "matched_in_target": false,
+        "matched_in_corpus": true,
+        "status": "PASS"
+      },
+      {
+        "entity": "non-refundable",
+        "type": "Policy_Directive",
+        "expected_file": "finance/expense_policy.pdf",
+        "matched_in_target": true,
+        "matched_in_corpus": true,
+        "status": "PASS"
+      },
+      {
+        "entity": "mandatory",
+        "type": "Policy_Directive",
+        "expected_file": "finance/expense_policy.pdf",
+        "matched_in_target": true,
+        "matched_in_corpus": true,
+        "status": "PASS"
+      }
+    ]
+  },
+  "dimension_d_cleaning_quality": {
+    "heading_integrity_pct": 100.0,
+    "table_integrity_pct": 100.0,
+    "total_headings_checked": 422,
+    "total_tables_checked": 98,
+    "code_blocks_checked": 3,
+    "balanced_code_blocks": 3,
+    "records": [
+      {
+        "clean_file": "engineering/api_standards.md",
+        "total_lines": 225,
+        "table_count": 4,
+        "issues": [],
+        "status": "PASS"
+      },
+      {
+        "clean_file": "engineering/architecture_overview.md",
+        "total_lines": 178,
+        "table_count": 0,
+        "issues": [],
+        "status": "PASS"
+      },
+      {
+        "clean_file": "engineering/deployment_guide.md",
+        "total_lines": 223,
+        "table_count": 6,
+        "issues": [],
+        "status": "PASS"
+      },
+      {
+        "clean_file": "engineering/engineering_guidelines.md",
+        "total_lines": 277,
+        "table_count": 7,
+        "issues": [],
+        "status": "PASS"
+      },
+      {
+        "clean_file": "finance/expense_categories.md",
+        "total_lines": 200,
+        "table_count": 5,
+        "issues": [],
+        "status": "PASS"
+      },
+      {
+        "clean_file": "finance/expense_policy.md",
+        "total_lines": 226,
+        "table_count": 6,
+        "issues": [],
+        "status": "PASS"
+      },
+      {
+        "clean_file": "finance/reimbursement_policy.md",
+        "total_lines": 239,
+        "table_count": 6,
+        "issues": [],
+        "status": "PASS"
+      },
+      {
+        "clean_file": "hr/benefits_policy.md",
+        "total_lines": 232,
+        "table_count": 7,
+        "issues": [],
+        "status": "PASS"
+      },
+      {
+        "clean_file": "hr/employees.md",
+        "total_lines": 541,
+        "table_count": 5,
+        "issues": [],
+        "status": "PASS"
+      },
+      {
+        "clean_file": "hr/employee_handbook.md",
+        "total_lines": 252,
+        "table_count": 6,
+        "issues": [],
+        "status": "PASS"
+      },
+      {
+        "clean_file": "hr/remote_work_policy.md",
+        "total_lines": 240,
+        "table_count": 7,
+        "issues": [],
+        "status": "PASS"
+      },
+      {
+        "clean_file": "operations/business_continuity.md",
+        "total_lines": 147,
+        "table_count": 0,
+        "issues": [],
+        "status": "PASS"
+      },
+      {
+        "clean_file": "operations/procurement_policy.md",
+        "total_lines": 229,
+        "table_count": 6,
+        "issues": [],
+        "status": "PASS"
+      },
+      {
+        "clean_file": "operations/system_catalog.md",
+        "total_lines": 375,
+        "table_count": 2,
+        "issues": [],
+        "status": "PASS"
+      },
+      {
+        "clean_file": "operations/vendor_management.md",
+        "total_lines": 246,
+        "table_count": 5,
+        "issues": [],
+        "status": "PASS"
+      },
+      {
+        "clean_file": "sales/commission_rules.md",
+        "total_lines": 165,
+        "table_count": 4,
+        "issues": [],
+        "status": "PASS"
+      },
+      {
+        "clean_file": "sales/discount_policy.md",
+        "total_lines": 210,
+        "table_count": 6,
+        "issues": [],
+        "status": "PASS"
+      },
+      {
+        "clean_file": "sales/sales_playbook.md",
+        "total_lines": 234,
+        "table_count": 6,
+        "issues": [],
+        "status": "PASS"
+      },
+      {
+        "clean_file": "security/access_control.md",
+        "total_lines": 181,
+        "table_count": 4,
+        "issues": [],
+        "status": "PASS"
+      },
+      {
+        "clean_file": "security/incident_response.md",
+        "total_lines": 314,
+        "table_count": 0,
+        "issues": [],
+        "status": "PASS"
+      },
+      {
+        "clean_file": "security/security_policy.md",
+        "total_lines": 233,
+        "table_count": 6,
+        "issues": [],
+        "status": "PASS"
+      }
+    ]
+  },
+  "dimension_e_output_integrity": {
+    "total_cleaned_documents": 21,
+    "empty_output_rate_pct": 0.0,
+    "duplicate_rate_pct": 0.0,
+    "metadata_completeness_pct": 100.0,
+    "empty_documents": [],
+    "duplicate_documents": [],
+    "missing_metadata_documents": [],
+    "encoding_error_documents": []
+  }
+}

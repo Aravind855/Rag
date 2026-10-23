@@ -15,6 +15,7 @@ import os
 from pathlib import Path
 import pickle
 import re
+import sys
 import time
 from typing import Any, Dict, List, Optional, Sequence, Union
 
@@ -183,6 +184,14 @@ def save_bm25_retriever(
     return out_file
 
 
+class _BM25Unpickler(pickle.Unpickler):
+    """Custom unpickler guaranteeing resolution of custom_bm25_tokenizer across modules."""
+    def find_class(self, module: str, name: str) -> Any:
+        if name == "custom_bm25_tokenizer":
+            return custom_bm25_tokenizer
+        return super().find_class(module, name)
+
+
 def load_bm25_retriever(
     index_path: Optional[Union[str, Path]] = None,
     k: Optional[int] = None,
@@ -200,8 +209,17 @@ def load_bm25_retriever(
     if not in_file.exists():
         raise FileNotFoundError(f"BM25 index file not found at {in_file}. Run indexing first.")
 
+    # Ensure __main__ has custom_bm25_tokenizer mapped for legacy pickled objects
+    main_mod = sys.modules.get("__main__")
+    if main_mod and not hasattr(main_mod, "custom_bm25_tokenizer"):
+        setattr(main_mod, "custom_bm25_tokenizer", custom_bm25_tokenizer)
+
     with open(in_file, "rb") as f:
-        retriever = pickle.load(f)
+        try:
+            retriever = _BM25Unpickler(f).load()
+        except Exception:
+            f.seek(0)
+            retriever = pickle.load(f)
 
     if k is not None:
         retriever.k = k
